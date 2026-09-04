@@ -97,9 +97,15 @@
 
   /* ---- setup mode: #setup=<who> ---- */
   var hash = location.hash.slice(1);
-  if (hash.indexOf("setup=") === 0) return setupMode(decodeURIComponent(hash.slice(6)));
+  if (hash.indexOf("setup=") === 0) return setupMode(decodeURIComponent(hash.slice(6)), null);
+  if (hash.indexOf("enrol=") === 0) {
+    try {
+      var e = JSON.parse(decodeURIComponent(escape(atob(hash.slice(6) + "===".slice((hash.length - 6 + 3) % 4)))));
+      return setupMode(e.who, e);
+    } catch (x) { /* fall through to the error below */ }
+  }
 
-  function setupMode(who) {
+  function setupMode(who, enrol) {
     var b32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
     function enc32(bytes) {
       var bits = 0, value = 0, out = "";
@@ -137,7 +143,10 @@
       view.innerHTML =
         '<div class="lbl">Set up approvals</div>' +
         '<h1>' + esc(who) + '</h1>' +
-        '<p class="why">This builds your key <strong>here in the browser</strong> and gives you one line to paste into a terminal on the machine that runs Jynx. Nothing is sent anywhere.</p>' +
+        '<p class="why">Your key is built <strong>here in the browser</strong>' +
+          (enrol && enrol.token
+            ? ' and sent straight to the terminal that is waiting for it, encrypted so only that terminal can read it. Nothing to paste.'
+            : ' and handed back as one line to paste into a terminal.') + '</p>' +
         '<div class="row" style="margin-bottom:16px">' +
         '<button id="mpin" class="' + (mode === "pin" ? "go" : "") + '">PIN</button>' +
         '<button id="mtotp" class="' + (mode === "totp" ? "go" : "") + '">Authenticator</button></div>' +
@@ -180,6 +189,52 @@
         if (await totpNow(secret) !== v1) { m.textContent = "That code does not match — check the clock on your phone."; m.className = "msg bad"; return; }
         blob = { who: who, auth: "totp", totp: secret };
       }
+      /* With a token, the page delivers it itself — encrypted with a key only
+         the waiting terminal has, so the channel carries ciphertext. Without
+         one, fall back to a line to paste, which is the only option left when
+         nothing is waiting to receive it. */
+      if (enrol && enrol.token) {
+        m.textContent = "Sending…";
+        try {
+          var salt = crypto.getRandomValues(new Uint8Array(16));
+          var iv = crypto.getRandomValues(new Uint8Array(12));
+          var kb = await crypto.subtle.importKey("raw", new TextEncoder().encode(enrol.token), "PBKDF2", false, ["deriveKey"]);
+          var ak = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+                                                 kb, { name: "AES-GCM", length: 256 }, false, ["encrypt"]);
+          var ctBuf = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, ak,
+            new TextEncoder().encode(JSON.stringify(blob))));
+          /* WebCrypto appends the tag; node wants it separately, so it is split
+             at a fixed offset on the other side. */
+          var packed = new Uint8Array(12 + ctBuf.length);
+          packed.set(iv); packed.set(ctBuf, 12);
+          var payload = btoa(String.fromCharCode.apply(null, packed));
+          var saltHex = Array.prototype.map.call(salt, function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+          await fetch("https://ntfy.sh/" + enrol.topic, { method: "POST", headers: { Priority: "1" },
+            body: "enrol " + saltHex + " " + payload });
+        } catch (x) { m.textContent = "Could not send it."; m.className = "msg bad"; return; }
+
+        var until = Date.now() + 30000;
+        while (Date.now() < until) {
+          try {
+            var res = await fetch("https://ntfy.sh/" + enrol.topic + "/json?poll=1&since=" + (Math.floor(Date.now() / 1000) - 60));
+            var txt = await res.text();
+            if (txt.indexOf("enrolled " + who) > -1) {
+              view.innerHTML = '<div class="done"><span class="pill ok"><i></i>set up</span>' +
+                '<h2 style="margin-top:14px">You are ready</h2>' +
+                '<p>Your key is on the machine, not here. Nothing to paste, nothing to remember but the ' +
+                (mode === "pin" ? "PIN" : "code") + '.</p>' +
+                '<div class="setup" style="margin-top:16px;text-align:left">npm run listen</div>' +
+                '<p class="note" style="text-align:left">Leave that running, or approvals reach a channel with nobody reading it.</p></div>';
+              return;
+            }
+          } catch (x) { /* keep waiting */ }
+          await new Promise(function (r) { setTimeout(r, 2000); });
+        }
+        m.textContent = "Sent, but the terminal did not answer. Is npm run approve -- --setup still waiting?";
+        m.className = "msg bad";
+        return;
+      }
+
       var b64 = btoa(JSON.stringify(blob)).replace(/=+$/, "");
       var line = "npm run approve -- --enroll " + b64 + " --as " + who;
       m.textContent = "";
@@ -187,7 +242,7 @@
         '<div class="lbl" style="margin-top:18px">Paste this into a terminal, in the jynx repo</div>' +
         '<div class="setup" id="cmd">' + esc(line) + '</div>' +
         '<div class="row"><button id="copy" style="width:100%">Copy the line</button></div>' +
-        '<p class="note" style="text-align:left">Do it on the machine that will hold the key — a credential copied through a chat app is a credential in a chat app. Then run <strong>npm run listen</strong>, or approvals reach a channel with nobody reading it.</p>';
+        '<p class="note" style="text-align:left">This link had no terminal waiting for it, so there is a line to carry across. Run it on the machine that will hold the key.</p>';
       $("copy").onclick = function () {
         navigator.clipboard.writeText(line).then(function () { $("copy").textContent = "Copied"; },
           function () { $("copy").textContent = "Select it and copy by hand"; });
