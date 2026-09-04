@@ -95,10 +95,111 @@
   var view = $("view");
   var esc = function (t) { var d = document.createElement("div"); d.textContent = t == null ? "" : t; return d.innerHTML; };
 
+  /* ---- setup mode: #setup=<who> ---- */
+  var hash = location.hash.slice(1);
+  if (hash.indexOf("setup=") === 0) return setupMode(decodeURIComponent(hash.slice(6)));
+
+  function setupMode(who) {
+    var b32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    function enc32(bytes) {
+      var bits = 0, value = 0, out = "";
+      for (var i = 0; i < bytes.length; i++) {
+        value = (value << 8) | bytes[i]; bits += 8;
+        while (bits >= 5) { out += b32[(value >>> (bits - 5)) & 31]; bits -= 5; }
+      }
+      if (bits > 0) out += b32[(value << (5 - bits)) & 31];
+      return out;
+    }
+    function dec32(str) {
+      var bits = 0, value = 0, out = [];
+      str = str.toUpperCase().replace(/[^A-Z2-7]/g, "");
+      for (var i = 0; i < str.length; i++) {
+        value = (value << 5) | b32.indexOf(str[i]); bits += 5;
+        if (bits >= 8) { out.push((value >>> (bits - 8)) & 255); bits -= 8; }
+      }
+      return new Uint8Array(out);
+    }
+    async function totpNow(secret) {
+      var step = Math.floor(Date.now() / 30000);
+      var msg = new Uint8Array(8);
+      for (var i = 7; i >= 0; i--) { msg[i] = step & 255; step = Math.floor(step / 256); }
+      var key = await crypto.subtle.importKey("raw", dec32(secret), { name: "HMAC", hash: "SHA-1" }, false, ["sign"]);
+      var h = new Uint8Array(await crypto.subtle.sign("HMAC", key, msg));
+      var off = h[h.length - 1] & 15;
+      var code = ((h[off] & 127) << 24 | h[off + 1] << 16 | h[off + 2] << 8 | h[off + 3]) % 1e6;
+      return ("00000" + code).slice(-6);
+    }
+
+    var secret = enc32(crypto.getRandomValues(new Uint8Array(20)));
+    var mode = "pin";
+
+    function paint() {
+      view.innerHTML =
+        '<div class="lbl">Set up approvals</div>' +
+        '<h1>' + esc(who) + '</h1>' +
+        '<p class="why">This builds your key <strong>here in the browser</strong> and gives you one line to paste into a terminal on the machine that runs Jynx. Nothing is sent anywhere.</p>' +
+        '<div class="row" style="margin-bottom:16px">' +
+        '<button id="mpin" class="' + (mode === "pin" ? "go" : "") + '">PIN</button>' +
+        '<button id="mtotp" class="' + (mode === "totp" ? "go" : "") + '">Authenticator</button></div>' +
+        (mode === "pin"
+          ? '<div class="lbl">Choose a PIN</div><input id="p1" type="tel" inputmode="numeric" maxlength="12" placeholder="••••">' +
+            '<div class="lbl" style="margin-top:12px">Again</div><input id="p2" type="tel" inputmode="numeric" maxlength="12" placeholder="••••">'
+          : '<p class="why">Add this to your authenticator, then type the code it shows.</p>' +
+            '<div class="setup" id="uri"></div>' +
+            '<div class="lbl" style="margin-top:12px">Code it shows</div>' +
+            '<input id="p1" type="tel" inputmode="numeric" maxlength="6" placeholder="······">') +
+        '<div class="row"><button id="build" class="go" style="width:100%">Build my key</button></div>' +
+        '<div class="msg" id="msg"></div>' +
+        '<div id="out"></div>';
+
+      if (mode === "totp") {
+        var uri = "otpauth://totp/Jynx:" + encodeURIComponent(who) + "?secret=" + secret + "&issuer=Jynx&period=30&digits=6";
+        $("uri").textContent = uri + "\n\nor type it:  " + secret.replace(/(.{4})/g, "$1 ").trim();
+      }
+      $("mpin").onclick = function () { mode = "pin"; paint(); };
+      $("mtotp").onclick = function () { mode = "totp"; paint(); };
+      $("build").onclick = build;
+    }
+
+    async function build() {
+      var m = $("msg"); m.className = "msg";
+      var v1 = ($("p1").value || "").trim();
+      var blob;
+      if (mode === "pin") {
+        var v2 = ($("p2").value || "").trim();
+        if (!/^\d{4,12}$/.test(v1)) { m.textContent = "Four to twelve digits."; m.className = "msg bad"; return; }
+        if (v1 !== v2) { m.textContent = "They do not match."; m.className = "msg bad"; return; }
+        m.textContent = "Deriving…";
+        var salt = crypto.getRandomValues(new Uint8Array(16));
+        var base = await crypto.subtle.importKey("raw", new TextEncoder().encode(v1), "PBKDF2", false, ["deriveBits"]);
+        var bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: salt, iterations: 210000, hash: "SHA-256" }, base, 256);
+        var hx = function (b) { return Array.prototype.map.call(new Uint8Array(b), function (x) { return ("0" + x.toString(16)).slice(-2); }).join(""); };
+        blob = { who: who, auth: "pin", salt: hx(salt), verifier: hx(bits) };
+      } else {
+        if (!/^\d{6}$/.test(v1)) { m.textContent = "Six digits from the app."; m.className = "msg bad"; return; }
+        if (await totpNow(secret) !== v1) { m.textContent = "That code does not match — check the clock on your phone."; m.className = "msg bad"; return; }
+        blob = { who: who, auth: "totp", totp: secret };
+      }
+      var b64 = btoa(JSON.stringify(blob)).replace(/=+$/, "");
+      var line = "npm run approve -- --enroll " + b64 + " --as " + who;
+      m.textContent = "";
+      $("out").innerHTML =
+        '<div class="lbl" style="margin-top:18px">Paste this into a terminal, in the jynx repo</div>' +
+        '<div class="setup" id="cmd">' + esc(line) + '</div>' +
+        '<div class="row"><button id="copy" style="width:100%">Copy the line</button></div>' +
+        '<p class="note" style="text-align:left">Do it on the machine that will hold the key — a credential copied through a chat app is a credential in a chat app. Then run <strong>npm run listen</strong>, or approvals reach a channel with nobody reading it.</p>';
+      $("copy").onclick = function () {
+        navigator.clipboard.writeText(line).then(function () { $("copy").textContent = "Copied"; },
+          function () { $("copy").textContent = "Select it and copy by hand"; });
+      };
+    }
+    paint();
+  }
+
   /* ---- the request, out of the fragment ---- */
   var req = null;
   try {
-    var raw = location.hash.slice(1);
+    var raw = hash;
     if (!raw) throw 0;
     var pad = raw + "===".slice((raw.length + 3) % 4);
     req = JSON.parse(decodeURIComponent(escape(atob(pad.replace(/-/g, "+").replace(/_/g, "/")))));
@@ -239,8 +340,20 @@
       } catch (e) { /* keep waiting */ }
       await new Promise(function (r) { setTimeout(r, 2000); });
     }
-    msg("Sent, but nothing answered. No session is listening for " + req.who + " — it will apply when one starts.", "bad");
-    busy(false);
+    /* Nothing answered. That is not a wrong PIN and it is not a network
+       problem — it means no session is reading this person's channel, so the
+       tap went somewhere with nobody there. Saying that plainly beats
+       re-enabling the buttons, which reads as "try again" and is why the same
+       request could be pressed over and over with no effect. */
+    view.innerHTML =
+      '<div class="done">' +
+      '<span class="pill bad"><i></i>nothing listening</span>' +
+      '<h2 style="margin-top:14px">' + esc(req.what) + '</h2>' +
+      '<p>Your ' + (req.auth === "totp" ? "code" : "PIN") + ' was sent, but no session is reading ' +
+      esc(req.who) + '&rsquo;s channel, so nothing verified it. It is still pending.</p>' +
+      '<div class="setup" style="margin-top:16px;text-align:left">npm run listen</div>' +
+      '<p class="note" style="text-align:left">Run that on the machine with the Jynx repo, then reopen this link.</p>' +
+      '</div>';
   }
 
   /* While the page is open, keep asking. Someone may decide on another device. */
