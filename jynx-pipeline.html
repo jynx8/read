@@ -1376,10 +1376,15 @@
   function draggable(el, handle, storeKey) {
     var down = null, moved = false, prevSelect = "";
 
+    /* The element's own size, which does not change while it is being dragged.
+       Reading it back per pointermove forces a synchronous layout of the whole
+       document — on a 165KB page under load that is the one hitch left in the
+       drag, and it is bought for a number we already know. */
+    var dim = null;
     function put(right, bottom) {
-      var r = el.getBoundingClientRect();
-      right = Math.min(Math.max(4, right), Math.max(4, window.innerWidth - r.width - 4));
-      bottom = Math.min(Math.max(4, bottom), Math.max(4, window.innerHeight - r.height - 4));
+      if (!dim) { var m = el.getBoundingClientRect(); dim = { w: m.width, h: m.height }; }
+      right = Math.min(Math.max(4, right), Math.max(4, window.innerWidth - dim.w - 4));
+      bottom = Math.min(Math.max(4, bottom), Math.max(4, window.innerHeight - dim.h - 4));
       el.style.right = right + "px"; el.style.bottom = bottom + "px";
       el.style.left = "auto"; el.style.top = "auto";
       if (pinned && el === fab) repin();
@@ -1389,6 +1394,7 @@
     }
 
     function begin(x, y, ev) {
+      dim = null;
       var r = el.getBoundingClientRect();
       down = { x: x, y: y, right: window.innerWidth - r.right, bottom: window.innerHeight - r.bottom };
       moved = false;
@@ -1483,16 +1489,35 @@
   /* Set while the bubble is being dragged or the page is scrolling: the petals
      follow instantly then, and animate the rest of the time. Transitioning a
      position that is being rewritten every frame is a smear, not an animation. */
-  var snap = false, snapT;
+  var snap = false, snapAt = 0, snapT = null;
   function snapNow() {
-    snap = true; clearTimeout(snapT);
-    snapT = setTimeout(function () { snap = false; }, 140);
+    snapAt = Date.now();
+    if (snap) return;              // already snapped; the timer below extends itself
+    snap = true;
+    (function poll() {
+      snapT = setTimeout(function () {
+        if (Date.now() - snapAt < 140) return poll();
+        snap = false; snapT = null;
+      }, 140);
+    })();
+  }
+
+  /* Which tools are showing changes only when the viewport crosses the phone
+     breakpoint, so it is answered once and cached rather than asked of the
+     style engine on every frame of a drag. */
+  var toolCache = null, toolCacheW = -1;
+  function visibleTools() {
+    var w = document.documentElement.clientWidth;
+    if (toolCache && toolCacheW === w) return toolCache;
+    toolCacheW = w;
+    toolCache = Array.prototype.filter.call(bar.querySelectorAll(".jx-t"), function (t) {
+      return getComputedStyle(t).display !== "none";
+    });
+    return toolCache;
   }
 
   function petals(cx, cy, vW, vH) {
-    var tools = Array.prototype.filter.call(bar.querySelectorAll(".jx-t"), function (t) {
-      return getComputedStyle(t).display !== "none";
-    });
+    var tools = visibleTools();
     if (!tools.length) return;
 
     /* Which way to open.
@@ -1523,11 +1548,13 @@
     }
     function apart(x, y) { var d = Math.abs(x - y) % 360; return d > 180 ? 360 - d : d; }
 
-    var mid = null, bestOff = 1e9;
-    for (var d = 0; d < 360; d += 4) {
-      if (!fits(d)) continue;
-      var off = apart(d, want);
-      if (off < bestOff) { bestOff = off; mid = d; }
+    /* Search outward from the direction we want rather than sweeping the whole
+       circle: the answer is almost always the first thing tried, so this exits
+       after one fits() check in the common case instead of ninety. */
+    var mid = null;
+    for (var off = 0; off <= 180; off += 6) {
+      if (fits(want + off)) { mid = want + off; break; }
+      if (off && fits(want - off)) { mid = want - off; break; }
     }
     if (mid === null) mid = want;   // nothing fits: stay pointed inward anyway
 
