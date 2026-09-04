@@ -910,6 +910,21 @@
   /* Only the drawing surface owns the gesture. Putting touch-action:none on
      the body meant that entering draw mode killed scrolling for the entire
      page — you could not get to the thing you wanted to draw on. */
+  /* iOS treats a quick second tap on anything without a declared touch-action
+     as double-tap-to-zoom. Zoomed, the visual viewport pans freely and you can
+     slide the page off into the black past its own edge with nothing to stop
+     you — which is what "tapping Jynx zooms and then the screen runs away"
+     actually was. It was never document overflow. Scoped to our own chrome, so
+     pinch-zoom on the document still works for anyone who needs it. */
+  .jx-root,.jx-root *,.jx-bar,.jx-bar *,.jx-pin,.jx-pop,.jx-pop *,
+  .jx-ask,.jx-ask *,.jx-panel,.jx-panel *,.jx-hello,.jx-hello *,
+  .jx-topwrap,.jx-topwrap *{touch-action:manipulation}
+  /* The bubble is dragged, so it claims the whole gesture — which also
+     suppresses double-tap. Its children have to say so themselves: touch-action
+     does not inherit, and the badge and the eyes were live zoom targets sitting
+     on top of a button that had already opted out. */
+  .jx-fab,.jx-fab *{touch-action:none}
+
   body.jx-area{touch-action:none;overscroll-behavior:none}
   body.jx-draw #jx-svg{touch-action:none;pointer-events:auto}
 
@@ -946,19 +961,10 @@
     /* Four tools on a phone. Area is a mouse gesture — dragging a box with a
        thumb on a page you also want to scroll is a fight, and the same job is
        done by pointing at the thing you meant. Close is the bubble itself.
-       Wider radius and fewer of them: a hand of cards, not a cluster. */
+       The petals are placed by petals() in the script: a fixed set of offsets
+       cannot know which way there is room to open. */
     .jx-bar .jx-t[data-mode="area"]{display:none}
     .jx-bar #jx-bar-close{display:none}
-    .jx-bar .jx-t.r1{left:-88px; top:-3px}
-    .jx-bar .jx-t.r2{left:-73px; top:-49px}
-    .jx-bar .jx-t.r3{left:-36px; top:-80px}
-    .jx-bar .jx-t.r4{left:12px; top:-87px}
-    /* Dragged to the left edge, a left-opening fan puts its far tool off the
-       screen. The arc mirrors instead of detaching from the bubble. */
-    .jx-bar.mirror .jx-t.r1{left:88px}
-    .jx-bar.mirror .jx-t.r2{left:73px}
-    .jx-bar.mirror .jx-t.r3{left:36px}
-    .jx-bar.mirror .jx-t.r4{left:-12px}
 
     .jx-panel{left:0!important;right:auto;top:auto!important;bottom:0;
       width:var(--jx-vw, 100vw);max-width:none;border-radius:18px 18px 0 0;
@@ -1073,7 +1079,7 @@
   var TOUCH_HINTS = {
     point: "Press and hold anything to comment on it. Or select some text — Jynx takes it from there.",
     area:  "Drag a box around several things at once.",
-    draw:  "Draw with your finger. Close the shape and it becomes something you can comment on."
+    draw:  "One finger draws \u2014 two fingers scroll the page. Close a shape and it becomes something you can comment on."
   };
   /* Three lines, and it only speaks when you have just done something.
      Talking on open, on every mode switch and on every hover made the tool the
@@ -1153,15 +1159,28 @@
     if (!vv) return 0;
     return Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
   }
+  /* Writing a custom property on the root element invalidates style for the
+     whole document. visualViewport fires scroll on every frame of an iOS
+     URL-bar collapse, so doing it unconditionally meant a full recalc of a
+     165KB page per frame while the reader was scrolling — which is what
+     "shaky" was. Write only what actually changed. */
+  var lastLift = null, lastVw = null, lastVx = null;
+  function setVar(name, value, last) {
+    if (value === last) return last;
+    document.documentElement.style.setProperty(name, value + "px");
+    return value;
+  }
   function liftChrome() {
     var vv = window.visualViewport;
-    document.documentElement.style.setProperty("--jx-lift", chromeInset() + "px");
+    /* --jx-lift only means anything in the manual fallback, and it is the one
+       of the three that changes continuously while scrolling. */
+    if (pinned) lastLift = setVar("--jx-lift", chromeInset(), lastLift);
     /* The horizontal twin of the same problem: innerWidth is the LAYOUT
        viewport (484 on a 390pt phone), so anything anchored left:8/right:8
        renders 468 wide and its right-hand end is off the screen. CSS has no way
        to ask for the visible width, so hand it over. */
-    document.documentElement.style.setProperty("--jx-vw", Math.round(vv ? vv.width : window.innerWidth) + "px");
-    document.documentElement.style.setProperty("--jx-vx", Math.round(vv ? vv.offsetLeft : 0) + "px");
+    lastVw = setVar("--jx-vw", Math.round(vv ? vv.width : window.innerWidth), lastVw);
+    lastVx = setVar("--jx-vx", Math.round(vv ? vv.offsetLeft : 0), lastVx);
     if (pinned) repin();
   }
   if (window.visualViewport) {
@@ -1176,6 +1195,7 @@
     if (pinned) return;
     pinned = true;
     document.body.classList.add("jx-manual");
+    lastLift = setVar("--jx-lift", chromeInset(), lastLift);
     CHROME().forEach(function (el) { el.style.position = "absolute"; });
     repin();
   }
@@ -1443,76 +1463,101 @@
       || document.documentElement.clientWidth || window.innerWidth;
   }
 
+  /* ---- the flower ----
+     A ring of petals around the bubble, opened toward wherever there is room.
+     A fixed set of offsets cannot do this: the same arc that looks right in the
+     middle of the screen puts half its tools past the edge in a corner, and
+     clamping them back piles them on top of each other. So walk the circle,
+     find the longest run of angles where a petal would land fully on screen,
+     and spread the visible tools evenly along it. In the open, that is a full
+     flower. In a corner, it is the quarter of a flower that fits — which is
+     also the quarter that covers the least of what you were reading. */
+  var R = 74, PAD = 26;
+  function petals(cx, cy, vW, vH) {
+    var tools = Array.prototype.filter.call(bar.querySelectorAll(".jx-t"), function (t) {
+      return getComputedStyle(t).display !== "none";
+    });
+    if (!tools.length) return;
+
+    var STEP = 5, N = 360 / STEP, fits = [];
+    for (var i = 0; i < N; i++) {
+      var a = i * STEP * Math.PI / 180;
+      var x = cx + R * Math.cos(a), y = cy + R * Math.sin(a);
+      fits.push(x >= PAD && x <= vW - PAD && y >= PAD && y <= vH - PAD);
+    }
+    /* Longest contiguous run, wrapping — a bubble against the right edge has
+       its open arc split across 0°, and a non-wrapping scan finds two short
+       runs where there is really one long one. */
+    var best = { start: 0, len: 0 };
+    if (fits.every(Boolean)) best = { start: 0, len: N };
+    else {
+      var run = 0;
+      for (var k = 0; k < N * 2; k++) {
+        if (fits[k % N]) { run++; if (run > best.len) best = { start: (k - run + 1) % N, len: run }; }
+        else run = 0;
+      }
+    }
+    if (!best.len) best = { start: 225 / STEP, len: 90 / STEP };
+
+    /* Inset from the ends so no petal sits hard against the edge of its own
+       arc, and cap the spread: a full 360 with four tools reads as a scatter,
+       not a flower. */
+    var span = Math.min(best.len * STEP, 300);
+    var mid = (best.start * STEP + best.len * STEP / 2) * Math.PI / 180;
+    var used = tools.length > 1 ? span * (tools.length - 1) / tools.length : 0;
+    var rad = used * Math.PI / 180;
+
+    tools.forEach(function (t, n) {
+      var a = mid + (tools.length > 1 ? (n / (tools.length - 1) - 0.5) * rad : 0);
+      var x = Math.round(R * Math.cos(a)) + "px", y = Math.round(R * Math.sin(a)) + "px";
+      if (t.style.left !== x) t.style.left = x;
+      if (t.style.top !== y) t.style.top = y;
+    });
+  }
+
   function place() {
     var r = fab.getBoundingClientRect();
+    var phone = cssWidth() <= 640;
+
+    /* The phone flower is placed first and for both paths. It used to live
+       behind an early return for the manual fallback, so on any browser where
+       position:fixed had to be worked around the petals were never given an
+       offset at all — four tools stacked on one another at the centre of the
+       bubble. */
+    if (!bar.hidden && phone) {
+      var vWide = document.documentElement.clientWidth || window.innerWidth;
+      var vHigh = document.documentElement.clientHeight || window.innerHeight;
+      /* The bubble is the middle of the flower and does not move to make room
+         for it. The petals go where there IS room — see petals(). */
+      var ax = r.left + r.width / 2;
+      var ay = r.top + r.height / 2;
+      petals(ax, ay, vWide, vHigh);
+
+      bar.classList.add("settling");
+      clearTimeout(bar._settle);
+      bar._settle = setTimeout(function () { bar.classList.remove("settling"); }, 60);
+      bar.style.position = pinned ? "absolute" : "fixed";
+      var bx = (ax + (pinned ? scrollX : 0)) + "px", by = (ay + (pinned ? scrollY : 0)) + "px";
+      if (bar.style.left !== bx) bar.style.left = bx;
+      if (bar.style.top !== by) bar.style.top = by;
+      bar.style.right = "auto"; bar.style.bottom = "auto";
+    }
+
     if (pinned) {
       // Everything is absolute now, so positions are page coordinates.
-      if (!bar.hidden) {
+      if (!bar.hidden && !phone) {
         var b = bar.getBoundingClientRect();
         bar.style.left = Math.max(scrollX + 8, Math.min(r.right + scrollX - b.width, scrollX + window.innerWidth - b.width - 8)) + "px";
         bar.style.top = Math.max(scrollY + 8, r.top + scrollY - b.height - 12) + "px";
         bar.style.right = "auto"; bar.style.bottom = "auto";
       }
       if (!panel.hidden) {
-        var q = panel.getBoundingClientRect(), bh = bar.hidden ? 0 : bar.getBoundingClientRect().height + 12;
+        var q = panel.getBoundingClientRect(), bh = (bar.hidden || phone) ? 0 : bar.getBoundingClientRect().height + 12;
         panel.style.left = Math.max(scrollX + 8, Math.min(r.right + scrollX - q.width, scrollX + window.innerWidth - q.width - 8)) + "px";
         panel.style.top = Math.max(scrollY + 8, r.top + scrollY - bh - q.height - 12) + "px";
         panel.style.right = "auto"; panel.style.bottom = "auto";
       }
       return;
-    }
-    /* On a phone the toolbar is a zero-size anchor at the middle of the bubble
-       and the buttons orbit it, so it is placed on the bubble rather than above
-       it. Everywhere else it is a bar sitting over the bubble. */
-    if (!bar.hidden && cssWidth() <= 640) {
-      /* The fan is CSS-positioned around this anchor, so the anchor has to sit
-         where the buttons can all land. The bubble's own rect is in LAYOUT
-         coordinates, which on a phone is wider than the screen — so clamp the
-         anchor into the visible band before using it, or the far end of the arc
-         is somewhere nobody can reach. Extents come from the arc itself:
-         112 + 23 to the left, 29 + 23 to the right, 111 + 23 up. */
-      /* documentElement.clientWidth is the CSS viewport — the same number the
-         media query above is testing. visualViewport.offsetLeft is the honest
-         choice in theory and reports a spurious 74 under emulation, which moved
-         the whole arc off the edge; the CSS viewport agrees with the layout in
-         every case that matters. */
-      /* Stay ON the bubble. The arc is 76px now, so it fits from almost
-         anywhere — clamping it hard was what detached the fan from the bubble
-         and made it look like a separate floating thing. */
-      var vWide = document.documentElement.clientWidth || window.innerWidth;
-      var vHigh = document.documentElement.clientHeight || window.innerHeight;
-      var cx = r.left + r.width / 2;
-      /* The fan opens away from the nearest edge. Clamping a left-opening arc
-         when the bubble is already at the left edge does not save it — the far
-         tool is still off screen and the menu has detached from the bubble it
-         belongs to. Mirroring keeps both. Extents are the arc itself: 88 out
-         plus a 23px half-button one way, 12 plus 23 the other, 87 plus 23 up. */
-      var flip = cx < vWide * 0.42;
-      bar.classList.toggle("mirror", flip);
-      var ax = flip
-        ? Math.min(Math.max(cx, 35), vWide - 111)
-        : Math.min(Math.max(cx, 111), vWide - 35);
-      var ay = Math.min(Math.max(r.top + r.height / 2, 110), vHigh - 30);
-
-      /* No animation while it is being placed — otherwise the fan replays on
-         every reposition and the whole menu shivers as the page scrolls. */
-      /* nth-child cannot skip a hidden sibling, so the visible tools carry
-         their own ring position. */
-      var ring = 0;
-      Array.prototype.forEach.call(bar.querySelectorAll(".jx-t"), function (t) {
-        t.classList.remove("r1", "r2", "r3", "r4");
-        if (getComputedStyle(t).display === "none") return;
-        ring += 1;
-        if (ring <= 4) t.classList.add("r" + ring);
-      });
-
-      bar.classList.add("settling");
-      clearTimeout(bar._settle);
-      bar._settle = setTimeout(function () { bar.classList.remove("settling"); }, 60);
-      bar.style.position = pinned ? "absolute" : "fixed";
-      bar.style.left = (ax + (pinned ? scrollX : 0)) + "px";
-      bar.style.top = (ay + (pinned ? scrollY : 0)) + "px";
-      bar.style.right = "auto"; bar.style.bottom = "auto";
     }
     if (!bar.hidden && cssWidth() > 640) {
       var b = bar.getBoundingClientRect();
@@ -1985,9 +2030,52 @@
 
   (function drawing() {
     var on = false;
+    /* One finger draws, two fingers scroll — on touch input only.
+       A mouse has one pointer and a wheel, so none of this applies to it and
+       none of it may get in its way: on a laptop you draw with the button held
+       and scroll with the wheel, exactly as before. A touchscreen laptop gets
+       both, chosen per gesture by what the finger or the mouse actually did,
+       which is why this keys on pointerType rather than on the device.
+       The drawing surface has to claim the touch outright — anything less and
+       the browser consumes the gesture before a pointermove ever arrives, and
+       there is no drawing. But claiming it also kills scrolling, which left the
+       reader stuck on whatever paragraph they happened to be on. So the second
+       finger is handled here instead of by the browser: it cancels the stroke
+       in progress (that is where the stray lines came from — a two-finger
+       scroll was being recorded as a drawing) and pans the page by the movement
+       of the midpoint between the two fingers, which is what the browser would
+       have done anyway. */
+    var live2 = new Map(), panFrom = null;
+    /* A pen is held like a finger and has no wheel, so it draws; only a mouse
+       is excluded, because it brought its own way to scroll. */
+    function isTouch(e) { return e.pointerType !== "mouse"; }
+    function midpoint() {
+      var ys = [], xs = [];
+      live2.forEach(function (v) { xs.push(v.x); ys.push(v.y); });
+      return [xs.reduce(function (a, b) { return a + b; }, 0) / xs.length,
+              ys.reduce(function (a, b) { return a + b; }, 0) / ys.length];
+    }
+    function dropStroke() {
+      if (live) live.remove();
+      live = null; drawPts = null; on = false;
+    }
+    document.addEventListener("pointerup", clearPointer, true);
+    document.addEventListener("pointercancel", clearPointer, true);
+    function clearPointer(e) {
+      if (!live2.size) return;
+      live2.delete(e.pointerId);
+      if (live2.size < 2) panFrom = null;
+    }
     document.addEventListener("pointerdown", function (e) {
       if (!open || mode !== "draw") return;
       if (e.target.closest && e.target.closest(".jx-root")) return;
+      if (isTouch(e)) live2.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (live2.size > 1) {
+        /* Second finger down: this was never a drawing. */
+        dropStroke();
+        panFrom = midpoint();
+        return;
+      }
       makeSvg(); sizeSvg();
       on = true; drawPts = [pct(e.clientX, e.clientY)];
       live = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
@@ -1997,6 +2085,14 @@
       e.preventDefault();
     });
     document.addEventListener("pointermove", function (e) {
+      if (live2.has(e.pointerId)) live2.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (live2.size > 1) {
+        var m = midpoint();
+        if (panFrom) window.scrollBy(0, panFrom[1] - m[1]);
+        panFrom = m;
+        e.preventDefault();
+        return;
+      }
       if (!on || !live) return;
       drawPts.push(pct(e.clientX, e.clientY));
       live.setAttribute("points", drawPts.map(function (p) {
@@ -2005,6 +2101,7 @@
       e.preventDefault();
     });
     document.addEventListener("pointerup", function () {
+      if (live2.size) return;
       if (!on) return;
       on = false;
       if (!drawPts || drawPts.length < 3) { if (live) live.remove(); live = null; drawPts = null; return; }
