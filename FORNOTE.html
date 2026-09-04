@@ -1482,7 +1482,9 @@
       width:var(--jx-vw, 100vw);max-width:none;border-radius:18px 18px 0 0;
       border-left:none;border-right:none;border-bottom:none;padding-bottom:env(safe-area-inset-bottom)}
     .jx-list{max-height:32vh}
-    .jx-ask{width:calc(100vw - 20px)}
+    /* 100vw is the LAYOUT viewport on a phone — 484 on a 390pt screen — so a
+       composer sized from it runs off the edge. --jx-vw is what you can see. */
+    .jx-ask{width:calc(var(--jx-vw, 100vw) - 20px)}
     .jx-ask textarea{font-size:16px}
     .jx-t .hk{display:none}
   }
@@ -2128,10 +2130,13 @@
     });
 
     document.body.appendChild(pop);
+    var vv2 = window.visualViewport;
+    var px0 = vv2 ? vv2.pageLeft : scrollX, py0 = vv2 ? vv2.pageTop : scrollY;
+    var pvw = vv2 ? vv2.width : window.innerWidth, pvh = vv2 ? vv2.height : window.innerHeight;
     var r = pop.getBoundingClientRect();
-    var x = Math.min(Math.max(8 + scrollX, left - 8), scrollX + window.innerWidth - r.width - 8);
+    var x = Math.min(Math.max(px0 + 8, left - 8), px0 + pvw - r.width - 8);
     var y = top + 24;
-    if (y + r.height > scrollY + window.innerHeight - 8) y = Math.max(scrollY + 8, top - r.height - 12);
+    if (y + r.height > py0 + pvh - 8) y = Math.max(py0 + 8, top - r.height - 12);
     pop.style.left = x + "px"; pop.style.top = y + "px";
     pop.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
     pop.addEventListener("pointerleave", unpeek);
@@ -2166,12 +2171,21 @@
       if (el) { var b = el.getBoundingClientRect(); a = [b.left + scrollX, b.bottom + scrollY]; }
       else a = [scrollX + 40, scrollY + 80];
     }
+    /* Clamp to the VISIBLE viewport. window.innerWidth is the layout viewport
+       on a phone and is wider than the screen, so clamping against it lets the
+       composer sit off the right-hand edge where nobody can reach it. */
+    var vv = window.visualViewport;
+    var x0 = vv ? vv.pageLeft : scrollX, y0 = vv ? vv.pageTop : scrollY;
+    var vw = vv ? vv.width : window.innerWidth, vh = vv ? vv.height : window.innerHeight;
     var r = ask.getBoundingClientRect();
-    var x = Math.min(Math.max(scrollX + 10, a[0]), scrollX + window.innerWidth - r.width - 10);
+    /* On a phone, being fully on screen beats being beside the exact pixel you
+       touched — the box is nearly the width of the display either way, so
+       anchoring horizontally buys nothing and can push it off the edge. */
+    var x = vw <= 600
+      ? x0 + 10
+      : Math.min(Math.max(x0 + 10, a[0]), x0 + vw - r.width - 10);
     var y = a[1] + 12;
-    if (y + r.height > scrollY + window.innerHeight - 10) {
-      y = Math.max(scrollY + 10, a[1] - r.height - 12);
-    }
+    if (y + r.height > y0 + vh - 10) y = Math.max(y0 + 10, a[1] - r.height - 12);
     ask.style.left = x + "px"; ask.style.top = y + "px";
   }
   function startLinking() {
