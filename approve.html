@@ -142,16 +142,58 @@
 
   function busy(on) { $("ok").disabled = on; $("deny").disabled = on; }
 
+  /* The page cannot tell whether the PIN was right — it only computes a proof
+     and posts it; the session holding the verifier is the thing that decides.
+     Saying "Approved" at the moment of sending was therefore a lie on a wrong
+     PIN, and the worst kind: it tells someone the job is done when it is not.
+     So we send, then wait for the verdict to come back on the same channel. */
+  async function verdict(id, from) {
+    /* "from" is the second this attempt was sent. A verdict from an EARLIER
+       attempt is still sitting in the channel's recent history, and matching it
+       reported the previous answer for the current try — a correct PIN read
+       back as wrong because the last one had been. */
+    var deadline = Date.now() + 25000;
+    while (Date.now() < deadline) {
+      try {
+        var res = await fetch("https://ntfy.sh/" + req.topic + "/json?poll=1&since=" + from);
+        var text = await res.text();
+        var lines = text.trim() ? text.trim().split("\n") : [];
+        for (var i = 0; i < lines.length; i++) {
+          var m; try { m = JSON.parse(lines[i]); } catch (e) { continue; }
+          if (m.event !== "message" || !m.message) continue;
+          if ((m.time || 0) < from) continue;
+          if (m.message.indexOf("decision " + id + " approved") > -1) return "approved";
+          if (m.message.indexOf("decision " + id + " rejected") > -1) return "rejected";
+          if (m.message.indexOf("decision " + id + " locked") > -1) return "locked";
+        }
+      } catch (e) { /* keep waiting */ }
+      await new Promise(function (r) { setTimeout(r, 2000); });
+    }
+    return "unconfirmed";
+  }
+
   $("ok").addEventListener("click", async function () {
     var pin = $("pin").value.trim();
     if (!/^\d{4,12}$/.test(pin)) { msg("Enter your PIN.", "bad"); return; }
     busy(true); msg("Checking…");
+    var proofHex = await proof(pin);
+    var from = Math.floor(Date.now() / 1000);
     try {
-      await send("approve " + req.id + " " + await proof(pin));
+      await send("approve " + req.id + " " + proofHex);
+    } catch (e) { msg(e.message, "bad"); busy(false); return; }
+
+    var out = await verdict(req.id, from);
+    if (out === "approved") {
       msg("Approved. You can close this.", "ok");
       $("pin").value = ""; $("pin").disabled = true;
-    } catch (e) {
-      msg(e.message, "bad"); busy(false);
+    } else if (out === "rejected") {
+      msg("That PIN was wrong. Nothing was approved.", "bad");
+      $("pin").value = ""; busy(false); $("pin").focus();
+    } else if (out === "locked") {
+      msg("Too many wrong PINs — approvals are locked for 15 minutes.", "bad");
+    } else {
+      msg("Sent, but nothing confirmed it. The session that asked may not be listening — it will be applied when it is.", "bad");
+      busy(false);
     }
   });
 
