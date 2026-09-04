@@ -265,21 +265,22 @@
 
 <section>
   <span class="eyebrow">The rule</span>
-  <h2>Kit that asks for attention gets people killed</h2>
+  <h2>A tool that needs you is a tool you leave behind</h2>
   <p>
-    In SF recon you carry what the mission needs and nothing else. Every gram,
-    every screen, every device that wants a glance gets one question: does this
-    serve the mission, or does the mission now serve it? Heads-up displays, live
-    feeds, smarter kit — the technology was never the problem. Attending to it
-    was.
+    In SF recon you carry what the mission needs and nothing else. Every device
+    that wants a glance gets one question: does this serve the mission, or does
+    the mission now serve it? Better kit did not change the answer. Needing to
+    attend to it did.
   </p>
   <div class="pull">
-    <p>Anything that takes attention from the objective is a liability, however good it is. The person stays at the centre. The kit serves them or it gets left behind.</p>
+    <p>Anything that takes attention from the objective is a liability, however good it is. The person stays at the centre.</p>
   </div>
   <p>
-    That is the failure of this generation of AI tools, and nobody is naming it.
-    You manage the context. You babysit the agent. You learn the prompt. You
-    check the dashboard. The tool became the mission.
+    That is the whole of what I brought across, and it is a design rule rather
+    than a war story. It happens to be the failure of this generation of AI
+    tools, and nobody is naming it: you manage the context, you babysit the
+    agent, you learn the prompt, you check the dashboard.
+    <strong>The tool became the mission.</strong>
   </p>
 </section>
 
@@ -287,7 +288,7 @@
   <span class="eyebrow">Origin</span>
   <h2>A system, a missing tool, and a thing that now builds itself</h2>
   <p>
-    In SF recon I built systems for teams under load. You learn to design for
+    I have built systems for teams working under load before. You learn to design for
     the person, not the capability, because a capability nobody can use at
     three in the morning is dead weight.
   </p>
@@ -1163,6 +1164,11 @@
   .jx-fab.slow   .jx-eye{height:1.5px;border-radius:1px;transition:height .16s ease}
   .jx-fab.squint .jx-eye{height:3px;border-radius:2px}
   .jx-fab.wink   .jx-eye:last-child{height:1.5px;border-radius:1px}
+  /* Looking down its nose at you. Eyes drop and converge, lids come halfway —
+     the face it makes just before it reads what you wrote. */
+  .jx-fab.nose .jx-eye{height:3.5px;border-radius:2px;transition:transform .22s ease,height .18s ease}
+  .jx-fab.nose .jx-eye:first-child{transform:translate(1.6px,2.6px)!important}
+  .jx-fab.nose .jx-eye:last-child{transform:translate(-1.6px,2.6px)!important}
   .jx-fab.think .jx-eye:first-child{animation:jxb .95s ease-in-out infinite}
   .jx-fab.think .jx-eye:last-child{animation:jxb .95s ease-in-out .17s infinite}
   @keyframes jxb{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
@@ -1705,15 +1711,17 @@
       { cls: "blink",  hold: 110, gap: [140, 190], twice: true },  // a quick double
       { cls: "slow",   hold: 320, gap: [4000, 7000] },   // a long, tired one
       { cls: "squint", hold: 260, gap: [3000, 6000] },   // half-lidded
-      { cls: "wink",   hold: 200, gap: [5000, 9000] }    // one eye only
+      { cls: "wink",   hold: 200, gap: [5000, 9000] },   // one eye only
+      { cls: "nose",   hold: 620, gap: [4500, 8000] }    // down the nose at you
     ];
     function pick() {
       var r = Math.random();
       if (r < .52) return MOODS[0];
       if (r < .72) return MOODS[1];
       if (r < .86) return MOODS[2];
-      if (r < .95) return MOODS[3];
-      return MOODS[4];
+      if (r < .93) return MOODS[3];
+      if (r < .975) return MOODS[4];
+      return MOODS[5];
     }
     function run() {
       var m = pick();
@@ -2070,6 +2078,8 @@
       dreamT.textContent = nextLine();
       dream.hidden = false;
     }
+    fab.classList.add("nose");
+    setTimeout(function () { fab.classList.remove("nose"); }, 900);
     ask.hidden = false;
     placeAsk();
     setTimeout(function () { try { askT.focus({ preventScroll: true }); } catch (e) { askT.focus(); } }, 20);
@@ -2115,6 +2125,8 @@
     var h = document.querySelector(".jx-linking"); if (h) h.classList.remove("jx-linking");
     if (el && pending) pending.links.push({ on: label(el), path: pathOf(el) });
     renderLinks();
+    fab.classList.add("nose");
+    setTimeout(function () { fab.classList.remove("nose"); }, 900);
     ask.hidden = false;
     placeAsk();
   }
