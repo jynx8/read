@@ -241,7 +241,7 @@
     </details>
     <span class="jx-eyes"><i></i><i></i></span>
     <span class="jx-wm">JYNX</span>
-    <button class="jx-open" id="jx-top" type="button">Open</button>
+    <a class="jx-open" href="https://jynx8.github.io/read/FORNOTE.html">Open</a>
   </div>
 </div>
 <!-- /jynx-topbar -->
@@ -493,7 +493,7 @@
   <h2>Point to merged</h2>
   <div class="loop">
     <div><div class="s">01</div><h4>Point</h4><p>Click it. Say what's wrong. Draw on it. Talk to it.</p></div>
-    <div><div class="s">02</div><h4>Context</h4><p>Component, file, owner, recent changes, covering tests. Assembled, not asked for.</p></div>
+    <div><div class="s">02</div><h4>Capture</h4><p>The element, the component, the file, the owner, recent changes, the tests — plus the live state: console, network, what you had entered, where you were.</p></div>
     <div><div class="s">03</div><h4>Route</h4><p>Classify, then send it to the model that should handle it. Most never leaves your network.</p></div>
     <div><div class="s">04</div><h4>Execute</h4><p>An agent takes its own environment, makes the change, runs the real tests.</p></div>
     <div><div class="s">05</div><h4>Return</h4><p>A proposal, or a merge if that's the ceiling you set. The outcome is recorded either way.</p></div>
@@ -503,6 +503,16 @@
     forty lines of two hundred thousand that sentence is about — and
     <strong>who owns those forty lines</strong> — is the work, and pointing is
     what makes it knowable.
+  </p>
+  <p>
+    It captures the <strong>state</strong>, not just the target. Console output,
+    failing requests, the values in the form, the route you were on, the
+    viewport, what changed in the last deploy. Bug-report tools already record
+    that and hand a human a video to watch.
+    <strong>Here it is not an attachment — it is the input.</strong> The capture
+    is compiled into one state-and-context package and handed to whichever model
+    the router picked, which is why a one-line comment can produce a correct
+    change: the model is not guessing at the situation, it was handed it.
   </p>
   <p>
     Ownership runs through everything. Every path has exactly one owner, so a
@@ -676,6 +686,7 @@
         <tr><td>Answering "who owns this?"</td><td class="num"><b>25</b> vs 1,507 tokens</td><td>A generated answer instead of a file. 60× cheaper, and it cannot be out of date.</td></tr>
         <tr><td>Built by</td><td class="num">2 devs + 1 non-dev</td><td>74 commits, 132 files, 2 days — working exactly the way the product works.</td></tr>
         <tr><td>Enforced boundaries</td><td class="num">4 automated gates</td><td>Layer direction, ownership, session records, protected files. A rule nothing checks is a wish.</td></tr>
+        <tr><td>Captured per comment</td><td class="num">state + context, one package</td><td>Target, component, file, owner, history, tests, console, network, route, form values — compiled once and handed to the routed model. Not a recording for a human to watch.</td></tr>
         <tr><td>In the browser</td><td class="num">0 lines of logic</td><td>No prompts, no model names, no routing, no keys. Nothing worth taking is shipped.</td></tr>
         <tr><td>Human gates to production</td><td class="num">1</td><td>Placed exactly where an action stops being reversible. Everything else is automatic.</td></tr>
       </tbody>
@@ -1377,12 +1388,12 @@
 </style>
 
 <div class="jx-root">
-  <div class="jx-fab" id="jx-fab" role="button" tabindex="0" aria-label="Open Jynx">
+  <a class="jx-fab" id="jx-fab" href="https://jynx8.github.io/read/FORNOTE.html" aria-label="Open Jynx">
     <svg class="jx-lock" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
     <span class="jx-face"><span class="jx-eye"></span><span class="jx-eye"></span></span>
     <span class="jx-fly" id="jx-fly" aria-hidden="true"><i class="w l"></i><i class="w r"></i><i class="body"></i></span>
   <span class="jx-badge" id="jx-badge" hidden>0</span>
-  </div>
+  </a>
 
   <div class="jx-hello" id="jx-hello" hidden>Try me<span class="jx-hello-tail"></span></div>
 
@@ -1874,7 +1885,8 @@
         d.appendChild(c);
       });
       var meta = document.createElement("div"); meta.className = "meta";
-      var when = document.createElement("span"); when.className = "when"; when.textContent = "#" + (i + 1) + " · you";
+      var when = document.createElement("span"); when.className = "when";
+      when.textContent = "#" + (i + 1) + " · " + (n.author || "you") + (n.ago ? " · " + n.ago : "");
       var act = document.createElement("span"); act.className = "act";
       var go = document.createElement("button"); go.textContent = "↗"; go.title = "Go to it";
       go.onclick = function (ev) { ev.stopPropagation(); var el = fromPath(n.path); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); };
@@ -2359,7 +2371,7 @@
   $("jx-copy").onclick = function () {
     if (!notes.length) { hint.textContent = "Nothing to copy yet — leave a comment first."; return; }
     var out = "Notes on the Jynx document\n\n" + notes.map(function (n, i) {
-      return (i + 1) + ". [" + (n.kind || "TEXT") + "] " + n.on
+      return (i + 1) + ". [" + (n.kind || "TEXT") + "] " + n.on + (n.author ? "  — " + n.author : "")
         + ((n.links || []).length ? "  ↳ " + n.links.map(function (l) { return l.on; }).join(", ") : "")
         + "\n   " + n.text;
     }).join("\n\n");
@@ -2497,6 +2509,34 @@
 
   liftChrome();
   try { notes = JSON.parse(ls(KEY) || "[]"); } catch (e) { notes = []; }
+
+  /* A few comments already on the page, from teammates who are not here.
+     Reading a document with three open threads on it is a different experience
+     from reading an empty one — it is the difference between being shown a tool
+     and being dropped into a team already using it. Clearly other people's:
+     each is attributed and timestamped, and Clear removes them like any other. */
+  (function seed() {
+    if (notes.length || ls("jynx-seeded") === "1") return;
+    var WANT = [
+      { find: "Everything else is distraction", author: "Ziv",  ago: "2h",
+        text: "This is the line. Lead every deck with it." },
+      { find: "Six models. Five are ours",      author: "Yoav", ago: "5h",
+        text: "Can we show cost per task next to each one? That is the number people ask about." },
+      { find: "What has to be true",            author: "Ziv",  ago: "1d",
+        text: "Year 2 assumes self-hosting is ready. Worth stating what that depends on." }
+    ];
+    var made = 0;
+    WANT.forEach(function (w) {
+      var el = Array.prototype.find.call(root.querySelectorAll("h1,h2,h3,p,li,td"), function (n) {
+        return (n.textContent || "").indexOf(w.find) > -1;
+      });
+      if (!el) return;
+      notes.push({ on: label(el), path: pathOf(el), text: w.text, links: [],
+                   kind: kindOf(el), author: w.author, ago: w.ago });
+      made++;
+    });
+    if (made) { ls("jynx-seeded", "1"); save(); }
+  })();
   bump();
   if (!durable && warn) {
     warn.hidden = false;
