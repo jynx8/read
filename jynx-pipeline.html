@@ -561,19 +561,22 @@
      product, not part of it — so on a light document it goes dark, and on a
      dark one it takes the light palette. It should always read as somebody
      else's tool resting on top. */
+  body.jx-manual .jx-fab{bottom:calc(20px + env(safe-area-inset-bottom) + var(--jx-lift,0px))}
   .jx-root{
     --c-bg:#131619; --c-raised:#1C2126; --c-line:#2B3138;
     --c-jynx:#9B82FF; --c-text:#EDEFF1; --c-dim:#8A9199;
     --c-green:#3ECF8E; --c-amber:#E0A73E; --c-ink:#12131A;
   }
   @media (prefers-color-scheme:dark){
-    :root:not([data-theme="light"]) .jx-root{
+    :root:not([data-theme="light"]) body.jx-manual .jx-fab{bottom:calc(20px + env(safe-area-inset-bottom) + var(--jx-lift,0px))}
+  .jx-root{
       --c-bg:#FBFBFC; --c-raised:#F1F2F4; --c-line:#E0E3E7;
       --c-jynx:#6B47F5; --c-text:#11151A; --c-dim:#5B6570;
       --c-green:#0F8A59; --c-amber:#9C6A0B; --c-ink:#fff;
     }
   }
-  :root[data-theme="dark"] .jx-root{
+  :root[data-theme="dark"] body.jx-manual .jx-fab{bottom:calc(20px + env(safe-area-inset-bottom) + var(--jx-lift,0px))}
+  .jx-root{
     --c-bg:#FBFBFC; --c-raised:#F1F2F4; --c-line:#E0E3E7;
     --c-jynx:#6B47F5; --c-text:#11151A; --c-dim:#5B6570;
     --c-green:#0F8A59; --c-amber:#9C6A0B; --c-ink:#fff;
@@ -581,10 +584,11 @@
 
   .jx-fab{
     position:fixed;z-index:9000;right:20px;
-    /* --jx-lift is the measured gap between the layout viewport and what the
-       person can actually see — the browser's own toolbar. Without it the
-       bubble renders behind that bar on every phone. */
-    bottom:calc(20px + env(safe-area-inset-bottom) + var(--jx-lift, 0px));
+    /* --jx-lift only applies where position:fixed is NOT being honoured. In a
+       working browser fixed already accounts for the chrome, and adding the
+       lift on top made the bubble jump every time the toolbar slid away on
+       scroll — which is what "it moves too much" was. */
+    bottom:calc(20px + env(safe-area-inset-bottom));
     /* Same correction sideways: keep it inside the width the person can see. */
     margin-right:calc(100vw - var(--jx-vw, 100vw));
     display:flex;align-items:center;gap:9px;
@@ -905,6 +909,10 @@
   body.jx-area,body.jx-point,body.jx-link{cursor:crosshair}
   body.jx-area,body.jx-draw{touch-action:none;overscroll-behavior:none}
 
+  /* While the anchor is being moved, nothing animates — otherwise every
+     reposition replays the fan and the whole thing shivers. */
+  .jx-bar.settling .jx-t{transition:none!important}
+
   @media (max-width:640px){
     /* ---- the radial menu ----
        A bar across the bottom of a phone is a strip of somebody else's screen,
@@ -925,21 +933,23 @@
       background:var(--c-bg);border:1px solid var(--c-line);
       box-shadow:0 6px 18px rgba(0,0,0,.34);
       transform:translate(-50%,-50%) scale(.4);opacity:0;
-      transition:transform .26s cubic-bezier(.2,.9,.3,1.35),opacity .18s ease,background .14s ease;
+      transition:transform .24s cubic-bezier(.2,.9,.3,1.3),opacity .16s ease,background .14s ease;
     }
     .jx-bar:not([hidden]) .jx-t{transform:translate(-50%,-50%) scale(1);opacity:1}
     .jx-bar .jx-t svg{width:19px;height:19px}
     .jx-bar .jx-t .hk{display:none}
     .jx-bar .jx-t[aria-pressed="true"]{background:var(--c-jynx);border-color:var(--c-jynx);color:var(--c-ink)}
-    /* An arc from just below due-left round to just past vertical, radius 112 —
-       the sweep a thumb makes from a bottom-right bubble, and it keeps every
-       button clear of both screen edges. */
-    .jx-bar .jx-t:nth-child(1){left:-112px; top:10px; transition-delay:.01s}
-    .jx-bar .jx-t:nth-child(2){left:-107px; top:-33px; transition-delay:.02s}
-    .jx-bar .jx-t:nth-child(3){left:-87px; top:-70px; transition-delay:.03s}
-    .jx-bar .jx-t:nth-child(4){left:-54px; top:-98px; transition-delay:.04s}
-    .jx-bar .jx-t:nth-child(5){left:-14px; top:-111px; transition-delay:.05s}
-    .jx-bar .jx-t:nth-child(6){left:29px; top:-108px; transition-delay:.06s}
+    /* Four tools, close to the thumb. Six at 112px read as a constellation
+       floating away from the bubble; four at 76px read as attached to it.
+       Comments and the eye moved into the panel, which is where you are already
+       looking when you want them. */
+    .jx-bar .jx-t:nth-child(1){left:-76px; top:-7px}
+    .jx-bar .jx-t:nth-child(2){left:-59px; top:-48px}
+    .jx-bar .jx-t:nth-child(3){left:-22px; top:-73px}
+    .jx-bar .jx-t:nth-child(4){left:22px; top:-73px}
+    /* The fifth is the panel toggle, tucked under the bubble. */
+    .jx-bar .jx-t:nth-child(5){left:-4px; top:-96px}
+    .jx-bar .jx-t:nth-child(6){display:none}
 
     .jx-panel{left:0!important;right:auto;top:auto!important;bottom:0;
       width:var(--jx-vw, 100vw);max-width:none;border-radius:18px 18px 0 0;
@@ -1146,6 +1156,7 @@
   function goManual() {
     if (pinned) return;
     pinned = true;
+    document.body.classList.add("jx-manual");
     CHROME().forEach(function (el) { el.style.position = "absolute"; });
     repin();
   }
@@ -1446,12 +1457,19 @@
          choice in theory and reports a spurious 74 under emulation, which moved
          the whole arc off the edge; the CSS viewport agrees with the layout in
          every case that matters. */
+      /* Stay ON the bubble. The arc is 76px now, so it fits from almost
+         anywhere — clamping it hard was what detached the fan from the bubble
+         and made it look like a separate floating thing. */
       var vWide = document.documentElement.clientWidth || window.innerWidth;
       var vHigh = document.documentElement.clientHeight || window.innerHeight;
+      var ax = Math.min(Math.max(r.left + r.width / 2, 100), vWide - 34);
+      var ay = Math.min(Math.max(r.top + r.height / 2, 122), vHigh - 30);
 
-      var ax = Math.min(Math.max(r.left + r.width / 2, 139), vWide - 56);
-      var ay = Math.min(Math.max(r.top + r.height / 2, 138), vHigh - 40);
-
+      /* No animation while it is being placed — otherwise the fan replays on
+         every reposition and the whole menu shivers as the page scrolls. */
+      bar.classList.add("settling");
+      clearTimeout(bar._settle);
+      bar._settle = setTimeout(function () { bar.classList.remove("settling"); }, 60);
       bar.style.position = pinned ? "absolute" : "fixed";
       bar.style.left = (ax + (pinned ? scrollX : 0)) + "px";
       bar.style.top = (ay + (pinned ? scrollY : 0)) + "px";
@@ -1502,7 +1520,7 @@
       var go = document.createElement("button"); go.textContent = "↗"; go.title = "Go to it";
       go.onclick = function (ev) { ev.stopPropagation(); var el = fromPath(n.path); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); };
       var del = document.createElement("button"); del.textContent = "🗑"; del.title = "Delete";
-      del.onclick = function (ev) { ev.stopPropagation(); notes.splice(i, 1); save(); render(); pins(); };
+      del.onclick = function (ev) { ev.stopPropagation(); dropNote(i); };
       act.appendChild(go); act.appendChild(del);
       meta.appendChild(when); meta.appendChild(act);
       d.appendChild(meta);
@@ -1519,6 +1537,18 @@
   }
 
   function closePop() { if (pop) { pop.remove(); pop = null; } }
+
+  /* Deleting a comment deletes its drawing too. Leaving the ink behind with no
+     comment on it is how a page fills up with marks nobody can get rid of. */
+  function dropNote(i) {
+    var n = notes[i];
+    if (n && typeof n.shape === "number") {
+      shapes.splice(n.shape, 1);
+      notes.forEach(function (o) { if (typeof o.shape === "number" && o.shape > n.shape) o.shape--; });
+    }
+    notes.splice(i, 1);
+    save(); render(); pins(); redraw();
+  }
 
   /* Any name of an element, anywhere in Jynx's own UI, is a live handle on the
      real thing: hovering it lights the element up on the page, clicking it
@@ -1625,7 +1655,7 @@
       del.textContent = "Delete"; del.title = "Delete this comment";
       del.onclick = function (e) {
         e.stopPropagation();
-        notes.splice(i, 1); save(); render(); pins(); closePop();
+        dropNote(i); closePop();
       };
       item.appendChild(del);
       pop.appendChild(item);
@@ -1735,10 +1765,21 @@
     placeAsk();
   }
   linkBtn.onclick = startLinking;
-  $("jx-cancel").onclick = function () { ask.hidden = true; pending = null; clearMarq(); };
+  function discardPending() {
+    /* A drawing is committed by saving the note, not by drawing it. Cancelling
+       used to leave the shape on the page forever with nothing attached to it —
+       ink you could not select, move or remove. */
+    if (pending && typeof pending.shape === "number") {
+      shapes.splice(pending.shape, 1);
+      notes.forEach(function (n) { if (typeof n.shape === "number" && n.shape > pending.shape) n.shape--; });
+      redraw();
+    }
+    ask.hidden = true; pending = null; clearMarq();
+  }
+  $("jx-cancel").onclick = discardPending;
   $("jx-save").onclick = function () {
     var text = askT.value.trim();
-    if (!text) { ask.hidden = true; pending = null; clearMarq(); return; }
+    if (!text) { discardPending(); return; }
     notes.push({ on: pending.on, path: pending.path, rect: pending.rect, text: text,
                  links: pending.links, kind: pending.kind, shape: pending.shape });
     sheet = true; panel.hidden = false; $("jx-show").setAttribute("aria-pressed", "true");
@@ -1752,7 +1793,7 @@
   document.addEventListener("pointerdown", function (e) {
     if (ask.hidden || linking) return;
     if (e.target.closest && e.target.closest(".jx-ask")) return;
-    ask.hidden = true; pending = null; clearMarq();
+    discardPending();
   });
 
   /* ---- point ---- */
@@ -2152,7 +2193,7 @@
     }
     if (e.key === "Escape") {
       if (linking) { addLink(null); return; }
-      if (!ask.hidden) { ask.hidden = true; pending = null; clearMarq(); return; }
+      if (!ask.hidden) { discardPending(); return; }
       if (pop) { closePop(); return; }
       if (sheet) { toggleSheet(false); return; }
       if (open) toggle(false);
