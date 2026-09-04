@@ -342,6 +342,7 @@
       '<div class="msg" id="msg"></div>' +
       '<p class="note">Both decisions need your ' + (isTotp ? "code" : "PIN") + '. It is never sent — this page derives a proof that works only for this one request.</p>';
 
+    checkAlive();
     if (req.at) {
       var left = Math.max(0, (req.ttl || 24) * 3600e3 - (Date.now() - Date.parse(req.at)));
       $("age").textContent = "expires in " + Math.floor(left / 3600e3) + "h";
@@ -351,6 +352,37 @@
     $("pin").addEventListener("keydown", function (e) { if (e.key === "Enter") act("approve"); });
     setTimeout(function () { $("pin").focus(); }, 250);
     watch();
+  }
+
+  /* Ask whether a session is actually reading this channel. A PIN typed at
+     nobody looks identical to a PIN that was wrong, and the difference matters
+     enormously to the person typing it. */
+  async function checkAlive() {
+    var el = $("state");
+    if (!el) return;
+    var nonce = Math.random().toString(16).slice(2, 10);
+    var from = Math.floor(Date.now() / 1000);
+    try { await send("jynx-ping " + nonce); } catch (e) { return; }
+    var until = Date.now() + 6000;
+    while (Date.now() < until) {
+      await new Promise(function (r) { setTimeout(r, 1200); });
+      try {
+        var msgs = await poll(from);
+        for (var i = 0; i < msgs.length; i++) {
+          if (msgs[i].message.indexOf("jynx-pong " + nonce) > -1) {
+            el.className = "pill live"; el.innerHTML = "<i></i>waiting for you";
+            return;
+          }
+        }
+      } catch (e) { /* keep asking */ }
+    }
+    el.className = "pill bad"; el.innerHTML = "<i></i>nothing is listening";
+    var m = $("msg");
+    if (m) {
+      m.className = "msg bad";
+      m.innerHTML = "No session is reading " + esc(req.who) + "&rsquo;s channel, so a decision here will not take effect yet. " +
+        "Run <strong>npm run listen</strong> and this will turn green.";
+    }
   }
 
   var acting = false;
