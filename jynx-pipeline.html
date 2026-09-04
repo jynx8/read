@@ -952,7 +952,11 @@
       background:var(--c-bg);border:1px solid var(--c-line);
       box-shadow:0 6px 18px rgba(0,0,0,.34);
       transform:translate(-50%,-50%) scale(.4);opacity:0;
-      transition:transform .24s cubic-bezier(.2,.9,.3,1.3),opacity .16s ease,background .14s ease;
+      /* left/top are animated so the cluster SWINGS to its new side as the
+         bubble crosses the screen, rather than teleporting. Suppressed by
+         .settling while dragging or scrolling — see snapNow(). */
+      transition:left .42s cubic-bezier(.22,1,.36,1),top .42s cubic-bezier(.22,1,.36,1),
+                 transform .26s cubic-bezier(.2,.9,.3,1.3),opacity .18s ease,background .14s ease;
     }
     .jx-bar:not([hidden]) .jx-t{transform:translate(-50%,-50%) scale(1);opacity:1}
     .jx-bar .jx-t svg{width:19px;height:19px}
@@ -1094,12 +1098,14 @@
   function nextLine() { return SAYS[sayN++ % SAYS.length]; }
 
   var sayTimer = null;
-  function say(text, ms) {
+  function say(text, ms, force) {
     var el = $("jx-hello"); if (!el) return;
     /* Two things speaking at once is the distraction the whole document is
-       about. While the composer is open Jynx is quiet — it still answers you
-       the moment you save, which is a reply rather than an interruption. */
-    if (!ask.hidden) return;
+       about, so unprompted lines wait: not over the composer, and not behind
+       the petals, where a speech bubble is clutter you cannot even read.
+       Answering something you just did is not an interruption, so the save
+       path forces it — that is a reply, and it is the one people liked. */
+    if (!force && (!ask.hidden || !bar.hidden)) return;
     clearTimeout(sayTimer);
     el.classList.remove("go");
     el.innerHTML = "";
@@ -1401,6 +1407,7 @@
       if (!down) return;
       var dx = x - down.x, dy = y - down.y;
       if (!moved && Math.hypot(dx, dy) < 5) return;
+      snapNow();
       moved = true;
       put(down.right - dx, down.bottom - dy);
       place();
@@ -1472,44 +1479,65 @@
      and spread the visible tools evenly along it. In the open, that is a full
      flower. In a corner, it is the quarter of a flower that fits — which is
      also the quarter that covers the least of what you were reading. */
-  var R = 74, PAD = 26;
+  var R = 68, PAD = 26, FAN = 124;
+  /* Set while the bubble is being dragged or the page is scrolling: the petals
+     follow instantly then, and animate the rest of the time. Transitioning a
+     position that is being rewritten every frame is a smear, not an animation. */
+  var snap = false, snapT;
+  function snapNow() {
+    snap = true; clearTimeout(snapT);
+    snapT = setTimeout(function () { snap = false; }, 140);
+  }
+
   function petals(cx, cy, vW, vH) {
     var tools = Array.prototype.filter.call(bar.querySelectorAll(".jx-t"), function (t) {
       return getComputedStyle(t).display !== "none";
     });
     if (!tools.length) return;
 
-    var STEP = 5, N = 360 / STEP, fits = [];
-    for (var i = 0; i < N; i++) {
-      var a = i * STEP * Math.PI / 180;
-      var x = cx + R * Math.cos(a), y = cy + R * Math.sin(a);
-      fits.push(x >= PAD && x <= vW - PAD && y >= PAD && y <= vH - PAD);
-    }
-    /* Longest contiguous run, wrapping — a bubble against the right edge has
-       its open arc split across 0°, and a non-wrapping scan finds two short
-       runs where there is really one long one. */
-    var best = { start: 0, len: 0 };
-    if (fits.every(Boolean)) best = { start: 0, len: N };
-    else {
-      var run = 0;
-      for (var k = 0; k < N * 2; k++) {
-        if (fits[k % N]) { run++; if (run > best.len) best = { start: (k - run + 1) % N, len: run }; }
-        else run = 0;
+    /* Which way to open.
+       Toward the middle of the screen, which is the same thing as away from
+       the nearest corner. Bottom-right opens up-left; carry the bubble to the
+       bottom-left and the cluster swings to up-right; top-left sends it
+       down-right. Going round the edges rotates it clockwise, and because the
+       direction is computed rather than picked from a table it is continuous —
+       it turns as the bubble moves rather than jumping between four presets. */
+    var want = Math.atan2(vH / 2 - cy, vW / 2 - cx) * 180 / Math.PI;
+    /* Dead centre there is no "away", and atan2 of nearly zero flickers between
+       opposite answers on a pixel of movement. Hold the corner pose. */
+    if (Math.hypot(vW / 2 - cx, vH / 2 - cy) < 40) want = 218;
+
+    var spread = tools.length > 1 ? FAN * (tools.length - 1) / tools.length : 0;
+
+    /* Now the nearest direction to that which actually fits. Walking the circle
+       and scoring beats carving out the largest empty arc: it answers the
+       question we care about — where can the whole cluster live, and which of
+       those is closest to where it wants to be. */
+    function fits(deg) {
+      for (var n = 0; n < tools.length; n++) {
+        var a = (deg + (tools.length > 1 ? (n / (tools.length - 1) - 0.5) * spread : 0)) * Math.PI / 180;
+        var x = cx + R * Math.cos(a), y = cy + R * Math.sin(a);
+        if (x < PAD || x > vW - PAD || y < PAD || y > vH - PAD) return false;
       }
+      return true;
     }
-    if (!best.len) best = { start: 225 / STEP, len: 90 / STEP };
+    function apart(x, y) { var d = Math.abs(x - y) % 360; return d > 180 ? 360 - d : d; }
 
-    /* Inset from the ends so no petal sits hard against the edge of its own
-       arc, and cap the spread: a full 360 with four tools reads as a scatter,
-       not a flower. */
-    var span = Math.min(best.len * STEP, 300);
-    var mid = (best.start * STEP + best.len * STEP / 2) * Math.PI / 180;
-    var used = tools.length > 1 ? span * (tools.length - 1) / tools.length : 0;
-    var rad = used * Math.PI / 180;
+    var mid = null, bestOff = 1e9;
+    for (var d = 0; d < 360; d += 4) {
+      if (!fits(d)) continue;
+      var off = apart(d, want);
+      if (off < bestOff) { bestOff = off; mid = d; }
+    }
+    if (mid === null) mid = want;   // nothing fits: stay pointed inward anyway
 
+    bar.classList.toggle("settling", snap);
     tools.forEach(function (t, n) {
-      var a = mid + (tools.length > 1 ? (n / (tools.length - 1) - 0.5) * rad : 0);
-      var x = Math.round(R * Math.cos(a)) + "px", y = Math.round(R * Math.sin(a)) + "px";
+      var ang = (mid + (tools.length > 1 ? (n / (tools.length - 1) - 0.5) * spread : 0)) * Math.PI / 180;
+      var x = Math.round(R * Math.cos(ang)) + "px", y = Math.round(R * Math.sin(ang)) + "px";
+      /* Petals leave in order rather than all at once — the difference between
+         a menu appearing and a menu opening. */
+      t.style.transitionDelay = snap ? "0ms" : (n * 26) + "ms";
       if (t.style.left !== x) t.style.left = x;
       if (t.style.top !== y) t.style.top = y;
     });
@@ -1533,9 +1561,6 @@
       var ay = r.top + r.height / 2;
       petals(ax, ay, vWide, vHigh);
 
-      bar.classList.add("settling");
-      clearTimeout(bar._settle);
-      bar._settle = setTimeout(function () { bar.classList.remove("settling"); }, 60);
       bar.style.position = pinned ? "absolute" : "fixed";
       var bx = (ax + (pinned ? scrollX : 0)) + "px", by = (ay + (pinned ? scrollY : 0)) + "px";
       if (bar.style.left !== bx) bar.style.left = bx;
@@ -1883,7 +1908,7 @@
     setTimeout(function () { fab.classList.remove("think"); }, 700);
     save(); render(); place(); pins();
     ask.hidden = true; pending = null; clearMarq();
-    say(nextLine(), 2600);
+    say(nextLine(), 2600, true);
   };
   ask.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
   document.addEventListener("pointerdown", function (e) {
@@ -2323,6 +2348,7 @@
     scrollQueued = true;
     requestAnimationFrame(function () {
       scrollQueued = false;
+      snapNow();
       if (pinned) repin();
       else {
         var r = fab.getBoundingClientRect();
