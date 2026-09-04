@@ -504,15 +504,54 @@
     <strong>who owns those forty lines</strong> — is the work, and pointing is
     what makes it knowable.
   </p>
+</section>
+
+<section>
+  <span class="eyebrow">The capture</span>
+  <h2>A bug report is for a person. This is for a machine.</h2>
+  <p class="kick">
+    Session-recording tools solved half of this years ago: they catch the
+    console, the network calls and a video, and hand a developer a good ticket.
+    The developer then spends twenty minutes working out which code it is about.
+    That twenty minutes is the whole job, and it is the half nobody captured.
+  </p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Layer</th><th>What Jynx captures</th><th>Session recorders</th></tr></thead>
+      <tbody>
+        <tr><td class="k">state</td>
+          <td>Console output, failed requests, the values in the form, the route, the viewport, the browser, the build that is live.</td>
+          <td style="color:var(--green)">✓ this part is solved</td></tr>
+        <tr><td class="k">target</td>
+          <td>The element you pointed at, the component that renders it, the file and the lines inside it.</td>
+          <td style="color:var(--dim)">a screenshot</td></tr>
+        <tr><td class="k">people</td>
+          <td><strong>Who owns that code, who last changed it, who reviewed it</strong> — so it routes to a person rather than a queue.</td>
+          <td style="color:var(--red)">—</td></tr>
+        <tr><td class="k">history</td>
+          <td><strong>What changed there recently and in which deploy</strong>, the proposals that touched it, and whether they landed.</td>
+          <td style="color:var(--red)">—</td></tr>
+        <tr><td class="k">verification</td>
+          <td>Which tests cover those lines, and whether they pass right now — so "done" is a fact rather than an opinion.</td>
+          <td style="color:var(--red)">—</td></tr>
+        <tr><td class="k">outcomes</td>
+          <td><strong>What was tried the last time something like this was asked here, and whether it worked.</strong> This is the part that compounds.</td>
+          <td style="color:var(--red)">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pull">
+    <p>A recorder produces an attachment for a human to watch. We produce the input a model acts on.</p>
+  </div>
+
   <p>
-    It captures the <strong>state</strong>, not just the target. Console output,
-    failing requests, the values in the form, the route you were on, the
-    viewport, what changed in the last deploy. Bug-report tools already record
-    that and hand a human a video to watch.
-    <strong>Here it is not an attachment — it is the input.</strong> The capture
-    is compiled into one state-and-context package and handed to whichever model
-    the router picked, which is why a one-line comment can produce a correct
-    change: the model is not guessing at the situation, it was handed it.
+    All of it compiles into one state-and-context package and goes to whichever
+    model the router picked. That is why a one-line comment can produce a correct
+    change: the model was <em>handed</em> the situation instead of inferring it —
+    and the last three layers are ones no tool outside your repository can reach,
+    because they are not in the browser at all.
   </p>
   <p>
     Ownership runs through everything. Every path has exactly one owner, so a
