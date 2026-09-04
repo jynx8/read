@@ -188,7 +188,12 @@
   /* The context graph reads as an instrument display, so it stays dark in both
      themes — a filament network on a light ground loses all of its contrast. */
   .nn{position:relative;background:#05070A;border:1px solid var(--line);margin:26px 0;overflow:hidden;aspect-ratio:16/9;min-height:340px}
-  .nn canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  /* Its own compositing layer. Without this, dragging the bubble across the
+     panel repaints half a megapixel of canvas on every frame — the bubble is
+     cheap, the thing underneath it is not. */
+  .nn canvas{position:absolute;inset:0;width:100%;height:100%;display:block;
+    transform:translateZ(0);will-change:transform}
+  .nn{contain:paint}
   .nn-ov{position:absolute;inset:0;pointer-events:none}
   .nn-tag{position:absolute;font-family:var(--f-mono);white-space:nowrap;
     display:flex;flex-direction:column;gap:1px;pointer-events:none;transform:translateY(-50%)}
@@ -1437,6 +1442,13 @@
     });
   }
 
+  /* The fabric never moves. Painting its several hundred bezier strands on
+     every frame is the single most expensive thing on this page, and it draws
+     exactly the same picture each time — so it is painted once onto an
+     offscreen canvas and blitted. Per-frame work drops from ~360 curve strokes
+     to one drawImage plus the traffic, which is what makes the page stay
+     responsive while somebody is dragging or drawing on top of it. */
+  var still = document.createElement("canvas"), sctx = still.getContext("2d");
   var W = 0, H = 0, DPR = 1, P = {};
   /* narrow panels give the wrapped footer and the column heads more room */
   function measure() {
@@ -1451,6 +1463,40 @@
     });
     seed = 20260904;
     EDGES.forEach(function (e) { e[3] = rr(-1, 1); });
+    paintStill();
+  }
+
+  function paintStill() {
+    still.width = cv.width; still.height = cv.height;
+    sctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    sctx.clearRect(0, 0, W, H);
+
+    sctx.strokeStyle = "rgba(255,255,255,.055)"; sctx.lineWidth = 1;
+    for (var gx = 0; gx < W; gx += 46) { sctx.beginPath(); sctx.moveTo(gx, 0); sctx.lineTo(gx, H); sctx.stroke(); }
+    for (var gy = 0; gy < H; gy += 46) { sctx.beginPath(); sctx.moveTo(0, gy); sctx.lineTo(W, gy); sctx.stroke(); }
+
+    var STRAND = [[0, .16], [-3.2, .085], [3.2, .085]];
+    EDGES.forEach(function (e) {
+      if (e[2] === 2) {
+        var d = bez(e[0], e[1], e[3]);
+        sctx.beginPath();
+        sctx.moveTo(d.x0, d.y0); sctx.bezierCurveTo(d.cx1, d.cy1, d.cx2, d.cy2, d.x1, d.y1);
+        sctx.strokeStyle = "rgba(" + ICE + ",.42)";
+        sctx.setLineDash([3, 5]); sctx.lineWidth = 1.1;
+        sctx.stroke(); sctx.setLineDash([]);
+        return;
+      }
+      for (var si = 0; si < STRAND.length; si++) {
+        var b = bez(e[0], e[1], e[3] + STRAND[si][0] * 0.11);
+        sctx.beginPath();
+        sctx.moveTo(b.x0, b.y0);
+        sctx.bezierCurveTo(b.cx1 + STRAND[si][0], b.cy1 + STRAND[si][0],
+                           b.cx2 + STRAND[si][0], b.cy2 + STRAND[si][0], b.x1, b.y1);
+        sctx.strokeStyle = "rgba(255,255,255," + STRAND[si][1] + ")";
+        sctx.lineWidth = si ? .55 : .8;
+        sctx.stroke();
+      }
+    });
   }
 
   function bez(a, b, warp) {
@@ -1490,45 +1536,22 @@
     });
   }
 
-  var last = 0, live = true;
+  var last = 0, live = true, busy = false, lastPaint = 0;
+  /* The overlay says so when a finger is down. Nothing here is worth a single
+     dropped frame of somebody's drag. */
+  window.addEventListener("jynx:busy", function () { busy = true; });
+  window.addEventListener("jynx:idle", function () { busy = false; last = 0; });
+
   function frame(now) {
     if (!live) return;
-    var dt = Math.min(48, now - last || 16); last = now;
+    if (busy) { requestAnimationFrame(frame); return; }
+    /* The packets move slowly. 30fps is indistinguishable here and halves the
+       cost on a phone. */
+    if (now - lastPaint < 31) { requestAnimationFrame(frame); return; }
+    var dt = Math.min(64, now - last || 16); last = now; lastPaint = now;
     ctx.clearRect(0, 0, W, H);
 
-    /* backdrop: a faint measured grid, so the thing reads as an instrument */
-    ctx.strokeStyle = "rgba(255,255,255,.055)"; ctx.lineWidth = 1;
-    for (var gx = 0; gx < W; gx += 46) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
-    for (var gy = 0; gy < H; gy += 46) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
-
-    /* the fabric
-       Three strands per edge rather than one hairline. A single curve at the
-       alpha this needs is invisible on a phone in daylight — the whole panel
-       reads as an empty black square — and bundling is also what the thing
-       actually looks like: many paths between the same two points, not one
-       wire. Cheap, because the strands are the same bezier with a nudge. */
-    var STRAND = [[0, .16], [-3.2, .085], [3.2, .085]];
-    EDGES.forEach(function (e) {
-      if (e[2] === 2) {
-        var d = bez(e[0], e[1], e[3]);
-        ctx.beginPath();
-        ctx.moveTo(d.x0, d.y0); ctx.bezierCurveTo(d.cx1, d.cy1, d.cx2, d.cy2, d.x1, d.y1);
-        ctx.strokeStyle = "rgba(" + ICE + ",.42)";
-        ctx.setLineDash([3, 5]); ctx.lineWidth = 1.1;
-        ctx.stroke(); ctx.setLineDash([]);
-        return;
-      }
-      for (var si = 0; si < STRAND.length; si++) {
-        var b = bez(e[0], e[1], e[3] + STRAND[si][0] * 0.11);
-        ctx.beginPath();
-        ctx.moveTo(b.x0, b.y0);
-        ctx.bezierCurveTo(b.cx1 + STRAND[si][0], b.cy1 + STRAND[si][0],
-                          b.cx2 + STRAND[si][0], b.cy2 + STRAND[si][0], b.x1, b.y1);
-        ctx.strokeStyle = "rgba(255,255,255," + STRAND[si][1] + ")";
-        ctx.lineWidth = si ? .55 : .8;
-        ctx.stroke();
-      }
-    });
+    ctx.drawImage(still, 0, 0, W, H);
 
     /* traffic */
     if (PACKETS.length < MAXP && rnd() < 0.18) spawn();
@@ -1680,6 +1703,7 @@
     border-radius:26px;padding:11px 17px;
     box-shadow:0 10px 30px rgba(0,0,0,.45);
     cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+    will-change:transform;
     transition:transform .16s cubic-bezier(.2,.9,.3,1.2),box-shadow .16s ease;
   }
   .jx-fab:hover{box-shadow:0 12px 34px rgba(124,92,252,.35)}
@@ -2500,7 +2524,12 @@
       snapNow();
       moved = true;
       put(down.right - dx, down.bottom - dy);
-      place();
+      /* place() opens with getBoundingClientRect, so it is coalesced to one
+         call per frame rather than one per pointer event. Measured: with the
+         document's canvas paused, this drag path costs zero dropped frames at
+         6x CPU throttle, so it is not what made dragging feel heavy — the
+         animated graph underneath it was. */
+      placeSoon();
       if (ev && ev.cancelable) ev.preventDefault();
     }
     function end() {
@@ -2575,6 +2604,10 @@
      position that is being rewritten every frame is a smear, not an animation. */
   var snap = false, snapAt = 0, snapT = null;
   function snapNow() {
+    /* Anything else on the page that paints on a timer should stop while the
+       user is actually touching something. The document's own canvas listens
+       for this. */
+    if (!snap) try { window.dispatchEvent(new CustomEvent("jynx:busy")); } catch (e) {}
     snapAt = Date.now();
     if (snap) return;              // already snapped; the timer below extends itself
     snap = true;
@@ -2582,6 +2615,7 @@
       snapT = setTimeout(function () {
         if (Date.now() - snapAt < 140) return poll();
         snap = false; snapT = null;
+        try { window.dispatchEvent(new CustomEvent("jynx:idle")); } catch (e) {}
       }, 140);
     })();
   }
@@ -2652,6 +2686,13 @@
       if (t.style.left !== x) t.style.left = x;
       if (t.style.top !== y) t.style.top = y;
     });
+  }
+
+  var placeQ = false;
+  function placeSoon() {
+    if (placeQ) return;
+    placeQ = true;
+    requestAnimationFrame(function () { placeQ = false; place(); });
   }
 
   function place() {

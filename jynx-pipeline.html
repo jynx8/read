@@ -596,6 +596,7 @@
     border-radius:26px;padding:11px 17px;
     box-shadow:0 10px 30px rgba(0,0,0,.45);
     cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+    will-change:transform;
     transition:transform .16s cubic-bezier(.2,.9,.3,1.2),box-shadow .16s ease;
   }
   .jx-fab:hover{box-shadow:0 12px 34px rgba(124,92,252,.35)}
@@ -1416,7 +1417,12 @@
       snapNow();
       moved = true;
       put(down.right - dx, down.bottom - dy);
-      place();
+      /* place() opens with getBoundingClientRect, so it is coalesced to one
+         call per frame rather than one per pointer event. Measured: with the
+         document's canvas paused, this drag path costs zero dropped frames at
+         6x CPU throttle, so it is not what made dragging feel heavy — the
+         animated graph underneath it was. */
+      placeSoon();
       if (ev && ev.cancelable) ev.preventDefault();
     }
     function end() {
@@ -1491,6 +1497,10 @@
      position that is being rewritten every frame is a smear, not an animation. */
   var snap = false, snapAt = 0, snapT = null;
   function snapNow() {
+    /* Anything else on the page that paints on a timer should stop while the
+       user is actually touching something. The document's own canvas listens
+       for this. */
+    if (!snap) try { window.dispatchEvent(new CustomEvent("jynx:busy")); } catch (e) {}
     snapAt = Date.now();
     if (snap) return;              // already snapped; the timer below extends itself
     snap = true;
@@ -1498,6 +1508,7 @@
       snapT = setTimeout(function () {
         if (Date.now() - snapAt < 140) return poll();
         snap = false; snapT = null;
+        try { window.dispatchEvent(new CustomEvent("jynx:idle")); } catch (e) {}
       }, 140);
     })();
   }
@@ -1568,6 +1579,13 @@
       if (t.style.left !== x) t.style.left = x;
       if (t.style.top !== y) t.style.top = y;
     });
+  }
+
+  var placeQ = false;
+  function placeSoon() {
+    if (placeQ) return;
+    placeQ = true;
+    requestAnimationFrame(function () { placeQ = false; place(); });
   }
 
   function place() {
