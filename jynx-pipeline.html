@@ -845,12 +845,22 @@
   .jx-linking{outline:2px dashed #3ECF8E!important;outline-offset:2px;background:rgba(62,207,142,.10)!important}
   .jx-tag{position:absolute;z-index:8999;font-family:var(--f-mono,monospace);font-size:9.5px;font-weight:700;letter-spacing:.04em;
     color:#fff;background:#7C5CFC;border-radius:4px;padding:2px 7px;pointer-events:none;white-space:nowrap}
-  .jx-pin{position:absolute;z-index:8998;min-width:23px;height:23px;border-radius:7px;padding:0 6px;
-    background:#7C5CFC;color:#fff;font-family:var(--f-mono,monospace);font-size:10px;font-weight:700;
-    display:flex;align-items:center;justify-content:center;cursor:pointer;border:1.5px solid rgba(255,255,255,.85);
-    box-shadow:0 3px 10px rgba(0,0,0,.35);animation:fadeSlideUp .26s ease;transition:transform .14s ease}
-  .jx-pin:hover{transform:scale(1.12)}
-  .jx-pin.many{background:var(--c-jynx);border-color:rgba(255,255,255,.9)}
+  /* A hint, not a badge. It used to be a 23px numbered block sitting over the
+     first word of whatever it marked — it hid the text it was about, which is
+     the one thing a comment marker must not do. Now it is a small dot tucked
+     into the corner, and it grows only when you reach for it. */
+  .jx-pin{position:absolute;z-index:8998;width:14px;height:14px;border-radius:50%;
+    background:#7C5CFC;color:#fff;font-family:var(--f-mono,monospace);font-size:8.5px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    border:1.5px solid var(--c-bg);box-shadow:0 1px 4px rgba(0,0,0,.3);
+    transition:transform .16s cubic-bezier(.2,.9,.3,1.3),width .16s ease,height .16s ease;
+    will-change:transform}
+  .jx-pin span{opacity:0;transition:opacity .12s ease}
+  .jx-pin:hover,.jx-pin:focus-visible{width:22px;height:22px;font-size:10px;transform:scale(1.06)}
+  .jx-pin:hover span,.jx-pin:focus-visible span{opacity:1}
+  .jx-pin.many{width:18px;height:18px}
+  .jx-pin.many span{opacity:1}
+  @media (max-width:600px){ .jx-pin{width:18px;height:18px;font-size:9.5px} .jx-pin span{opacity:1} }
 
   /* Hovering any reference to an element, anywhere in Jynx, lights the real
      thing up. Confirmation without having to guess. */
@@ -868,7 +878,16 @@
     box-shadow:0 14px 36px rgba(0,0,0,.5);font-family:var(--f-body,system-ui),sans-serif;animation:fadeSlideUp .16s ease}
   .jx-pop .w{font-family:var(--f-mono,monospace);font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--c-jynx);display:block;margin-bottom:6px}
   .jx-pop .t{font-size:13.5px;line-height:1.5;color:var(--c-text)}
-  .jx-pop .row{display:flex;gap:7px;margin-top:11px}
+  .jx-pop .on{font-family:var(--f-mono,monospace);font-size:10px;color:var(--c-dim);
+    margin:-2px 0 9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .jx-pop .who{font-family:var(--f-mono,monospace);font-size:9px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--c-jynx);margin-bottom:4px}
+  .jx-pop .x{margin-top:8px;background:none;border:none;padding:0;cursor:pointer;
+    font-family:var(--f-mono,monospace);font-size:9px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--c-dim);opacity:.7}
+  .jx-pop .x:hover{opacity:1;color:var(--c-amber)}
+  .jx-pop .row{display:flex;gap:7px;margin-top:12px;padding-top:11px;border-top:1px solid var(--c-line)}
+  .jx-pop .row .go{background:var(--c-jynx);border-color:var(--c-jynx);color:var(--c-ink)}
   .jx-pop .row button{flex:1;border-radius:9px;padding:8px;cursor:pointer;font-family:var(--f-body,system-ui),sans-serif;font-weight:700;font-size:12px;
     background:transparent;border:1px solid var(--c-line);color:var(--c-dim)}
   .jx-pop .row button:hover{color:var(--c-text);border-color:var(--c-jynx)}
@@ -893,11 +912,14 @@
        not on screen. --jx-lift keeps it clear of the browser's own chrome. */
     .jx-bar{left:8px!important;right:auto!important;
       width:calc(var(--jx-vw, 100vw) - 16px)!important;
-      justify-content:space-between;gap:4px;padding:8px;border-radius:18px;
+      justify-content:space-between;gap:3px;padding:6px;border-radius:15px;
       top:auto!important;bottom:calc(82px + env(safe-area-inset-bottom) + var(--jx-lift,0px))!important}
     /* Six buttons have to fit the narrowest phone, so they share what is there
        rather than each insisting on 46px and overflowing the screen. */
-    .jx-t{width:auto;flex:1 1 0;min-width:0;height:46px}
+    /* Smaller than a thumb target on purpose: this bar sits over somebody's
+       document, and a row of 46px blocks is the tool asking for the screen. */
+    .jx-t{width:auto;flex:1 1 0;min-width:0;height:38px;border-radius:10px}
+    .jx-t svg{width:17px;height:17px}
     .jx-panel{left:0!important;right:auto;top:auto!important;bottom:0;
       width:var(--jx-vw, 100vw);max-width:none;border-radius:18px 18px 0 0;
       border-left:none;border-right:none;border-bottom:none;padding-bottom:env(safe-area-inset-bottom)}
@@ -1500,12 +1522,13 @@
 
       var pin = document.createElement("div");
       pin.className = "jx-pin";
-      pin.textContent = g.idx.length > 1 ? String(g.idx.length) : String(g.idx[0] + 1);
       if (g.idx.length > 1) pin.classList.add("many");
       pin.style.left = (left - 11) + "px";
       pin.style.top = (top - 11) + "px";
       pin.setAttribute("role", "button");
-      pin.setAttribute("aria-label", g.idx.length + " comment(s)");
+      pin.setAttribute("aria-label", g.idx.length + (g.idx.length === 1 ? " comment" : " comments") + " here");
+      pin.setAttribute("tabindex", "0");
+      pin.title = notes[g.idx[0]].text.slice(0, 60);
       pin.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); });
       pin.addEventListener("pointerenter", function () { if (el) el.classList.add("jx-peek"); });
       pin.addEventListener("pointerleave", unpeek);
@@ -1524,30 +1547,57 @@
     if (!idxs.length) return;
 
     pop = document.createElement("div"); pop.className = "jx-pop";
+    var n0 = notes[idxs[0]];
     var head = document.createElement("span"); head.className = "w";
-    head.textContent = idxs.length + (idxs.length === 1 ? " comment" : " comments") + " · " + (notes[idxs[0]].kind || "TEXT");
+    head.textContent = (n0.kind || "TEXT") + " · " + idxs.length + (idxs.length === 1 ? " comment" : " comments");
     pop.appendChild(head);
+
+    var on = document.createElement("div"); on.className = "on";
+    on.textContent = n0.on;
+    pop.appendChild(on);
 
     idxs.forEach(function (i, k) {
       var n = notes[i];
       var item = document.createElement("div"); item.className = "jx-popitem";
       item.style.animationDelay = (k * 55) + "ms";
+
+      var who = document.createElement("div"); who.className = "who";
+      who.textContent = (n.author || "you") + (n.ago ? " · " + n.ago : " · just now");
+      item.appendChild(who);
+
       var t = document.createElement("div"); t.className = "t"; t.textContent = n.text;
       item.appendChild(t);
+
       (n.links || []).forEach(function (l) {
         var c = handle(document.createElement("span"), l.path);
         c.className += " lk"; c.textContent = "↳ " + l.on.slice(0, 22);
         item.appendChild(c);
       });
-      var row = document.createElement("div"); row.className = "row";
-      var del = document.createElement("button"); del.textContent = "Delete";
+
+      var del = document.createElement("button"); del.className = "x";
+      del.textContent = "Delete"; del.title = "Delete this comment";
       del.onclick = function (e) {
         e.stopPropagation();
         notes.splice(i, 1); save(); render(); pins(); closePop();
       };
-      row.appendChild(del); item.appendChild(row);
+      item.appendChild(del);
       pop.appendChild(item);
     });
+
+    /* A thread, not a list: you can answer it where it sits. */
+    var row = document.createElement("div"); row.className = "row";
+    var add = document.createElement("button"); add.className = "go";
+    add.textContent = "Add a comment";
+    add.onclick = function (e) {
+      e.stopPropagation();
+      var el = fromPath(n0.path);
+      closePop();
+      askFor("Comment on", n0.on, n0.path, n0.rect, n0.kind,
+        el ? [el.getBoundingClientRect().left + scrollX, el.getBoundingClientRect().bottom + scrollY] : [left, top]);
+    };
+    var shut = document.createElement("button"); shut.textContent = "Close";
+    shut.onclick = function (e) { e.stopPropagation(); closePop(); };
+    row.appendChild(add); row.appendChild(shut); pop.appendChild(row);
 
     document.body.appendChild(pop);
     var vv2 = window.visualViewport;
@@ -2025,14 +2075,23 @@
   document.addEventListener("pointerdown", function (e) {
     if (pop && !pop.contains(e.target) && !(e.target.closest && e.target.closest(".jx-pin"))) closePop();
   });
+  /* Scroll used to tear down and rebuild every pin on every event, which is
+     what made it feel heavy on a phone. Pins are absolutely positioned in page
+     coordinates, so they do not move when the page scrolls — there is nothing
+     to redo. All that is needed is the fixed-position check, once per frame. */
+  var scrollQueued = false;
   window.addEventListener("scroll", function () {
-    if (pinned) { repin(); }
-    else {
-      // Did the bubble scroll away with the page? Then fixed is not being honoured.
-      var r = fab.getBoundingClientRect();
-      if (r.bottom > window.innerHeight + 6 || r.top < -6 || r.right > window.innerWidth + 6) goManual();
-    }
-    pins(); closePop();
+    if (scrollQueued) return;
+    scrollQueued = true;
+    requestAnimationFrame(function () {
+      scrollQueued = false;
+      if (pinned) repin();
+      else {
+        var r = fab.getBoundingClientRect();
+        if (r.bottom > window.innerHeight + 6 || r.top < -6 || r.right > window.innerWidth + 6) goManual();
+      }
+      if (pop) closePop();
+    });
   }, { passive: true });
   window.addEventListener("resize", function () { place(); placeAsk(); sizeSvg(); redraw(); pins(); });
 
