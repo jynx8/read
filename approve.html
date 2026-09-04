@@ -14,10 +14,17 @@
   everything from the link that opened it.
 
   It never sends the PIN. It derives PBKDF2(pin, salt) with Web Crypto and posts
-  HMAC(that, requestId). Anyone watching the channel sees a proof bound to one
-  request: it cannot be run backwards to the PIN and cannot approve anything
-  else. That is why a single, ordinary notification channel is enough, and why
-  this is one tap instead of a second subscription.
+  HMAC(that, requestId) — a proof bound to one request, which cannot be run
+  backwards and cannot approve anything else. With an authenticator it posts the
+  six-digit code, which is worthless thirty seconds later and is burned on use.
+
+  BOTH approve and deny need that proof. A deny anyone could press is a
+  denial-of-service on your own team, and it is why the notification carries one
+  button rather than two.
+
+  The page is single-use. It asks the channel whether this request has already
+  been decided — on load, while open, and after acting — and once it has, the
+  controls are gone for good. Reopening the link shows the outcome, not a form.
 -->
 <style>
   :root{
@@ -60,153 +67,205 @@
   button:disabled{opacity:.45}
   .msg{margin-top:16px;font-size:14px;line-height:1.5;text-align:center;min-height:20px}
   .msg.ok{color:var(--ok)} .msg.bad{color:var(--bad)}
+  .meta{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:10.5px;color:var(--dim);margin:0 0 18px}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;
+    letter-spacing:.1em;text-transform:uppercase;padding:5px 10px;border-radius:99px;border:1px solid var(--line)}
+  .pill.live{color:var(--jynx);border-color:var(--jynx)}
+  .pill.ok{color:var(--ok);border-color:var(--ok)}
+  .pill.bad{color:var(--bad);border-color:var(--bad)}
+  .pill i{width:6px;height:6px;border-radius:50%;background:currentColor;display:block}
+  .done{text-align:center;padding:10px 0 4px}
+  .done h2{font-size:19px;margin:0 0 8px;letter-spacing:-.01em}
+  .done p{font-size:14px;color:var(--dim);margin:0;line-height:1.6}
+  .setup{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px;
+    font-family:var(--mono);font-size:11.5px;line-height:1.7;color:var(--ink);
+    overflow-x:auto;white-space:pre-wrap;word-break:break-word}
   .note{margin-top:18px;font-family:var(--mono);font-size:10px;line-height:1.6;color:var(--dim);text-align:center}
 </style>
 </head>
 <body>
 <div class="card">
   <div class="mark"><span class="eyes"><i></i><i></i></span><b>JYNX</b></div>
-  <div id="load">
-    <div class="lbl">Approval</div>
-    <h1 id="what">Loading…</h1>
-    <p class="why" id="why" hidden></p>
-    <pre class="run" id="run" hidden></pre>
-    <p class="from" id="from"></p>
-    <div class="lbl">Your PIN</div>
-    <input id="pin" type="tel" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="••••">
-    <div class="row">
-      <button id="deny">Deny</button>
-      <button id="ok" class="go">Approve</button>
-    </div>
-    <div class="msg" id="msg"></div>
-    <p class="note">Your PIN is never sent. This page derives a proof from it that
-      works only for this one request.</p>
-  </div>
+  <div id="view"></div>
 </div>
 <script>
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
-  var msg = function (t, k) { var m = $("msg"); m.textContent = t; m.className = "msg" + (k ? " " + k : ""); };
+  var view = $("view");
+  var esc = function (t) { var d = document.createElement("div"); d.textContent = t == null ? "" : t; return d.innerHTML; };
 
+  /* ---- the request, out of the fragment ---- */
   var req = null;
   try {
     var raw = location.hash.slice(1);
-    if (!raw) throw new Error("no request in the link");
+    if (!raw) throw 0;
     var pad = raw + "===".slice((raw.length + 3) % 4);
     req = JSON.parse(decodeURIComponent(escape(atob(pad.replace(/-/g, "+").replace(/_/g, "/")))));
+    if (!req.id || !req.topic) throw 0;
   } catch (e) {
-    $("what").textContent = "This link is not a valid approval.";
-    $("load").querySelector(".lbl").textContent = "Nothing to do";
-    ["why","run","pin","msg"].forEach(function (i) { var el = $(i); if (el) el.hidden = true; });
-    $("deny").hidden = true; $("ok").hidden = true;
+    view.innerHTML = '<div class="done"><h2>Not a valid approval link</h2>' +
+      '<p>Open the one from the notification.</p></div>';
     return;
   }
 
-  $("what").textContent = req.what;
-  if (req.why) { $("why").textContent = req.why; $("why").hidden = false; }
-  if (req.run) { $("run").textContent = req.run; $("run").hidden = false; }
-  $("from").textContent = "asked by " + req.from + " · request " + req.id;
-  document.title = "Approve — " + req.what;
-
   var enc = new TextEncoder();
-  function hex(buf) {
-    return Array.prototype.map.call(new Uint8Array(buf), function (b) {
-      return ("0" + b.toString(16)).slice(-2);
-    }).join("");
-  }
-  function bytes(h) {
-    var out = new Uint8Array(h.length / 2);
-    for (var i = 0; i < out.length; i++) out[i] = parseInt(h.substr(i * 2, 2), 16);
-    return out;
-  }
+  function hex(b){return Array.prototype.map.call(new Uint8Array(b),function(x){return ("0"+x.toString(16)).slice(-2);}).join("");}
+  function bytes(h){var o=new Uint8Array(h.length/2);for(var i=0;i<o.length;i++)o[i]=parseInt(h.substr(i*2,2),16);return o;}
 
-  /* PBKDF2 then HMAC — the same two steps the listener does, so the proof
-     matches without either side ever handling the other's secret. */
-  async function proof(pin) {
-    var base = await crypto.subtle.importKey("raw", enc.encode(pin), "PBKDF2", false, ["deriveBits"]);
+  async function proof(secret) {
+    if (req.auth === "totp") return String(secret).replace(/\s+/g, "");
+    var base = await crypto.subtle.importKey("raw", enc.encode(secret), "PBKDF2", false, ["deriveBits"]);
     var bits = await crypto.subtle.deriveBits(
-      { name: "PBKDF2", salt: bytes(req.salt), iterations: 210000, hash: "SHA-256" }, base, 256);
+      { name: "PBKDF2", salt: bytes(req.salt), iterations: req.iter || 210000, hash: "SHA-256" }, base, 256);
     var key = await crypto.subtle.importKey("raw", bits, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
     return hex(await crypto.subtle.sign("HMAC", key, enc.encode(req.id)));
   }
 
+  var URL_BASE = "https://ntfy.sh/" + req.topic;
+  async function poll(since) {
+    var res = await fetch(URL_BASE + "/json?poll=1&since=" + since);
+    var t = await res.text();
+    return (t.trim() ? t.trim().split("\n") : []).map(function (l) {
+      try { return JSON.parse(l); } catch (e) { return null; }
+    }).filter(function (m) { return m && m.event === "message" && m.message; });
+  }
   async function send(body) {
-    var res = await fetch("https://ntfy.sh/" + req.topic, {
-      method: "POST",
-      headers: { Priority: "3", Tags: "lock" },
-      body: body,
-    });
+    var res = await fetch(URL_BASE, { method: "POST", headers: { Priority: "3" }, body: body });
     if (!res.ok) throw new Error("could not reach the channel (" + res.status + ")");
   }
 
-  function busy(on) { $("ok").disabled = on; $("deny").disabled = on; }
+  /* Has this already been decided? Asked on load, while open, and after acting —
+     the same question every time, so a decision made on another device, in
+     another tab, or a second ago all land in the same place. */
+  async function decidedSince(since) {
+    var msgs = await poll(since);
+    for (var i = 0; i < msgs.length; i++) {
+      var m = msgs[i];
+      if ((m.time || 0) < since) continue;
+      if (m.message.indexOf("decision " + req.id + " approved") > -1) return { state: "approved", at: m.time };
+      if (m.message.indexOf("decision " + req.id + " denied") > -1) return { state: "denied", at: m.time };
+    }
+    return null;
+  }
 
-  /* The page cannot tell whether the PIN was right — it only computes a proof
-     and posts it; the session holding the verifier is the thing that decides.
-     Saying "Approved" at the moment of sending was therefore a lie on a wrong
-     PIN, and the worst kind: it tells someone the job is done when it is not.
-     So we send, then wait for the verdict to come back on the same channel. */
-  async function verdict(id, from) {
-    /* "from" is the second this attempt was sent. A verdict from an EARLIER
-       attempt is still sitting in the channel's recent history, and matching it
-       reported the previous answer for the current try — a correct PIN read
-       back as wrong because the last one had been. */
-    var deadline = Date.now() + 25000;
+  var expired = req.at && req.ttl && (Date.now() - Date.parse(req.at)) > req.ttl * 3600e3;
+
+  function done(state, detail) {
+    var ok = state === "approved";
+    view.innerHTML =
+      '<div class="done">' +
+      '<span class="pill ' + (ok ? "ok" : "bad") + '"><i></i>' + esc(state) + '</span>' +
+      '<h2 style="margin-top:14px">' + esc(req.what) + '</h2>' +
+      '<p>' + esc(detail) + '</p></div>';
+  }
+
+  function needsSetup() {
+    view.innerHTML =
+      '<div class="lbl">Cannot approve yet</div>' +
+      '<h1>No approval set up for ' + esc(req.who) + '</h1>' +
+      '<p class="why">Nothing is waiting on this page. On <strong>your own machine</strong>, in the jynx repo, run this once — it stores a key locally and never leaves that machine:</p>' +
+      '<div class="setup">npm run approve -- --setup --as ' + esc(req.who) +
+      '\n\n# or with an authenticator app instead of a PIN\nnpm run approve -- --setup --as ' + esc(req.who) + ' --totp</div>' +
+      '<p class="note" style="text-align:left">Then ask ' + esc(req.from) + ' to send the request again — this link was built before you had a key, so it cannot be used.</p>';
+  }
+
+  function form() {
+    var isTotp = req.auth === "totp";
+    view.innerHTML =
+      '<div class="lbl">Approval</div>' +
+      '<h1>' + esc(req.what) + '</h1>' +
+      (req.why ? '<p class="why">' + esc(req.why) + '</p>' : "") +
+      (req.run ? '<pre class="run">' + esc(req.run) + '</pre>' : "") +
+      '<p class="meta"><span>asked by ' + esc(req.from) + '</span><span>' + esc(req.id) + '</span>' +
+        '<span id="age"></span></p>' +
+      '<p class="from" style="margin-bottom:16px"><span class="pill live" id="state"><i></i>waiting</span></p>' +
+      '<div class="lbl">' + (isTotp ? "Your authenticator code" : "Your PIN") + '</div>' +
+      '<input id="pin" type="tel" inputmode="numeric" autocomplete="one-time-code" maxlength="' + (isTotp ? 6 : 12) + '" placeholder="' + (isTotp ? "······" : "••••") + '">' +
+      '<div class="row"><button id="no">Deny</button><button id="yes" class="go">Approve</button></div>' +
+      '<div class="msg" id="msg"></div>' +
+      '<p class="note">Both decisions need your ' + (isTotp ? "code" : "PIN") + '. It is never sent — this page derives a proof that works only for this one request.</p>';
+
+    if (req.at) {
+      var left = Math.max(0, (req.ttl || 24) * 3600e3 - (Date.now() - Date.parse(req.at)));
+      $("age").textContent = "expires in " + Math.floor(left / 3600e3) + "h";
+    }
+    $("yes").addEventListener("click", function () { act("approve"); });
+    $("no").addEventListener("click", function () { act("deny"); });
+    $("pin").addEventListener("keydown", function (e) { if (e.key === "Enter") act("approve"); });
+    setTimeout(function () { $("pin").focus(); }, 250);
+    watch();
+  }
+
+  var acting = false;
+  function msg(t, k) { var m = $("msg"); if (m) { m.textContent = t; m.className = "msg" + (k ? " " + k : ""); } }
+  function busy(on) { acting = on; if ($("yes")) $("yes").disabled = on; if ($("no")) $("no").disabled = on; }
+
+  async function act(verb) {
+    if (acting) return;
+    var secret = ($("pin").value || "").trim();
+    var isTotp = req.auth === "totp";
+    if (isTotp ? !/^\d{6}$/.test(secret) : !/^\d{4,12}$/.test(secret)) {
+      msg(isTotp ? "Six digits from your authenticator." : "Enter your PIN.", "bad"); return;
+    }
+    busy(true); msg("Checking…");
+    var p;
+    try { p = await proof(secret); } catch (e) { msg("Could not compute the proof.", "bad"); busy(false); return; }
+    var from = Math.floor(Date.now() / 1000);
+    try { await send(verb + " " + req.id + " " + p); }
+    catch (e) { msg(e.message, "bad"); busy(false); return; }
+
+    /* The page cannot tell whether the secret was right — the session holding
+       the key decides. Saying "approved" at the moment of sending was a lie on
+       a wrong PIN, and the worst kind: it says the job is done when it is not. */
+    var deadline = Date.now() + 30000;
     while (Date.now() < deadline) {
       try {
-        var res = await fetch("https://ntfy.sh/" + req.topic + "/json?poll=1&since=" + from);
-        var text = await res.text();
-        var lines = text.trim() ? text.trim().split("\n") : [];
-        for (var i = 0; i < lines.length; i++) {
-          var m; try { m = JSON.parse(lines[i]); } catch (e) { continue; }
-          if (m.event !== "message" || !m.message) continue;
+        var msgs = await poll(from);
+        for (var i = 0; i < msgs.length; i++) {
+          var m = msgs[i];
           if ((m.time || 0) < from) continue;
-          if (m.message.indexOf("decision " + id + " approved") > -1) return "approved";
-          if (m.message.indexOf("decision " + id + " rejected") > -1) return "rejected";
-          if (m.message.indexOf("decision " + id + " locked") > -1) return "locked";
+          if (m.message.indexOf("decision " + req.id + " approved") > -1)
+            return done("approved", "Nothing more to do. This link is now spent.");
+          if (m.message.indexOf("decision " + req.id + " denied") > -1)
+            return done("denied", "Nothing will happen. This link is now spent.");
+          if (m.message.indexOf("decision " + req.id + " rejected") > -1) {
+            msg(isTotp ? "That code did not match. Try the current one." : "That PIN was wrong.", "bad");
+            $("pin").value = ""; busy(false); $("pin").focus(); return;
+          }
+          if (m.message.indexOf("decision " + req.id + " locked") > -1)
+            return done("denied", "Too many failed attempts — approvals are locked for fifteen minutes.");
         }
       } catch (e) { /* keep waiting */ }
       await new Promise(function (r) { setTimeout(r, 2000); });
     }
-    return "unconfirmed";
+    msg("Sent, but nothing answered. No session is listening for " + req.who + " — it will apply when one starts.", "bad");
+    busy(false);
   }
 
-  $("ok").addEventListener("click", async function () {
-    var pin = $("pin").value.trim();
-    if (!/^\d{4,12}$/.test(pin)) { msg("Enter your PIN.", "bad"); return; }
-    busy(true); msg("Checking…");
-    var proofHex = await proof(pin);
-    var from = Math.floor(Date.now() / 1000);
-    try {
-      await send("approve " + req.id + " " + proofHex);
-    } catch (e) { msg(e.message, "bad"); busy(false); return; }
-
-    var out = await verdict(req.id, from);
-    if (out === "approved") {
-      msg("Approved. You can close this.", "ok");
-      $("pin").value = ""; $("pin").disabled = true;
-    } else if (out === "rejected") {
-      msg("That PIN was wrong. Nothing was approved.", "bad");
-      $("pin").value = ""; busy(false); $("pin").focus();
-    } else if (out === "locked") {
-      msg("Too many wrong PINs — approvals are locked for 15 minutes.", "bad");
-    } else {
-      msg("Sent, but nothing confirmed it. The session that asked may not be listening — it will be applied when it is.", "bad");
-      busy(false);
+  /* While the page is open, keep asking. Someone may decide on another device. */
+  async function watch() {
+    var since = Math.floor(Date.now() / 1000) - 60;
+    for (;;) {
+      await new Promise(function (r) { setTimeout(r, 4000); });
+      if (acting) continue;
+      try {
+        var d = await decidedSince(since);
+        if (d) return done(d.state, "Decided elsewhere. This link is now spent.");
+      } catch (e) { /* offline; keep trying */ }
     }
-  });
+  }
 
-  $("deny").addEventListener("click", async function () {
-    busy(true); msg("Sending…");
+  (async function start() {
+    view.innerHTML = '<div class="lbl">Approval</div><h1>Checking…</h1>';
+    if (req.auth === "none") return needsSetup();
+    if (expired) return done("denied", "This request expired after " + (req.ttl || 24) + " hours without an answer. Ask again if it still matters.");
     try {
-      await send("deny " + req.id);
-      msg("Denied. Nothing will happen.", "ok");
-    } catch (e) { msg(e.message, "bad"); busy(false); }
-  });
-
-  $("pin").addEventListener("keydown", function (e) { if (e.key === "Enter") $("ok").click(); });
-  setTimeout(function () { $("pin").focus(); }, 250);
+      var already = await decidedSince(Math.floor(Date.parse(req.at || Date.now()) / 1000));
+      if (already) return done(already.state, "This was already decided. The link is spent.");
+    } catch (e) { /* if the check fails, still offer the form */ }
+    form();
+  })();
 })();
 </script>
 </body>
