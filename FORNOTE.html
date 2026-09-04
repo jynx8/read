@@ -1,0 +1,2510 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Jynx — execution for whatever your team ships.">
+<title>FORNOTE</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Assistant:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --jynx:#7C5CFC; --bg:#F2F4F5; --panel:#FFFFFF; --raised:#EAEDEF;
+    --line:#DBE0E3; --text:#11151A; --dim:#5B6570;
+    --green:#159865; --yellow:#B3790E; --red:#C23B2E;
+    --f-display:'Space Grotesk','Segoe UI',sans-serif;
+    --f-body:'Assistant','Segoe UI',sans-serif;
+    --f-mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --jynx:#9B82FF; --bg:#0B0D0F; --panel:#15181B; --raised:#1D2124;
+    --line:#272C30; --text:#EDEFF1; --dim:#8A9199;
+    --green:#3ECF8E; --yellow:#E0A73E; --red:#E2574C;
+  }}
+  :root[data-theme="dark"]{
+    --jynx:#9B82FF; --bg:#0B0D0F; --panel:#15181B; --raised:#1D2124;
+    --line:#272C30; --text:#EDEFF1; --dim:#8A9199;
+    --green:#3ECF8E; --yellow:#E0A73E; --red:#E2574C;
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:400 17px/1.6 var(--f-body);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:0 30px 110px}
+  h1,h2,h3,h4{font-family:var(--f-display);font-weight:700;text-wrap:balance;margin:0}
+  p{margin:0 0 1em;max-width:66ch}
+  .num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+  .eyebrow{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.19em;text-transform:uppercase;color:var(--dim)}
+
+  header{padding:52px 0 0}
+  .top{display:flex;justify-content:space-between;align-items:baseline;gap:20px;flex-wrap:wrap;margin-bottom:58px}
+  .wordmark{font-family:var(--f-display);font-weight:700;font-size:24px;letter-spacing:.03em;color:var(--jynx)}
+  /* Only clip the gradient where the clip is supported. color:transparent with a
+     failed gradient is an invisible wordmark, and most people open this in an
+     in-app browser. */
+  @supports ((-webkit-background-clip:text) or (background-clip:text)){
+    .wordmark{background-image:linear-gradient(100deg,#7C5CFC,#B9A7FF);
+      -webkit-background-clip:text;background-clip:text;color:transparent}
+  }
+  header .doc{font-family:var(--f-mono);font-weight:500;font-size:12.5px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase;margin-bottom:30px}
+  h1{font-size:clamp(40px,7vw,66px);line-height:.99;letter-spacing:-.038em;max-width:13ch}
+  h1 em{font-style:normal;color:var(--jynx)}
+  .stand{font-size:20px;line-height:1.48;color:var(--dim);margin-top:30px;max-width:56ch}
+  .stand b{color:var(--text);font-weight:600}
+  .byline{display:flex;gap:18px;align-items:baseline;margin-top:44px;padding-top:20px;border-top:1px solid var(--line);font-family:var(--f-mono);font-size:11.5px;color:var(--dim);flex-wrap:wrap}
+  .byline b{font-family:var(--f-body);font-size:15px;font-weight:600;color:var(--text)}
+
+  section{margin-top:76px}
+  section > .eyebrow{display:block;margin-bottom:9px}
+  h2{font-size:clamp(31px,3.8vw,40px);letter-spacing:-.03em;line-height:1.06;margin-bottom:20px}
+  .kick{color:var(--dim);font-size:18px;margin-bottom:26px;max-width:58ch}
+
+  .pull{border-left:3px solid var(--jynx);padding:2px 0 2px 24px;margin:28px 0}
+  .pull p{font-family:var(--f-display);font-weight:600;font-size:21px;line-height:1.36;letter-spacing:-.016em;max-width:50ch;margin:0}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);margin:26px 0}
+  .grid2 > div{background:var(--panel);padding:22px 24px}
+  .grid2 h4{font-size:15px;margin-bottom:12px}
+  .grid2 ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+  .grid2 li{font-size:14.5px;line-height:1.5;padding-left:18px;position:relative}
+  .grid2 li::before{position:absolute;left:0;font-family:var(--f-mono);font-size:12px}
+  .bad h4{color:var(--red)} .bad li::before{content:"\2013";color:var(--red)}
+  .good h4{color:var(--green)} .good li::before{content:"+";color:var(--green)}
+
+  /* Flex, not grid: five items in an auto-fit grid leave a phantom cell, and
+     with the gap painted by a background that cell reads as an empty box. */
+  .loop{display:flex;flex-wrap:wrap;gap:1px;background:var(--line);border:1px solid var(--line);margin:24px 0}
+  .loop > div{background:var(--panel);padding:17px 18px 19px;flex:1 1 156px;min-width:0}
+  .loop > div .s{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;color:var(--jynx);margin-bottom:8px}
+  .loop > div h4{font-size:14.5px;margin-bottom:4px}
+  .loop > div p{font-size:13.5px;color:var(--dim);margin:0;max-width:none;line-height:1.45}
+
+  .stack{border:1px solid var(--line);margin:24px 0}
+  .layer{display:grid;grid-template-columns:146px 1fr;gap:22px;padding:15px 20px;background:var(--panel);border-bottom:1px solid var(--line);align-items:baseline}
+  .layer:last-child{border-bottom:none}
+  .layer .nm{font-family:var(--f-mono);font-size:13px;font-weight:500;color:var(--jynx)}
+  .layer .nm small{display:block;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-top:3px}
+  .layer p{margin:0;font-size:14.5px;max-width:none;color:var(--dim)}
+  .layer p b{color:var(--text);font-weight:600}
+
+  .scroll{overflow-x:auto;border:1px solid var(--line);background:var(--panel);margin:24px 0}
+  table{border-collapse:collapse;width:100%;min-width:600px;font-size:14.5px}
+  th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-family:var(--f-mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);font-weight:500;background:var(--raised);white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  td.k{font-family:var(--f-mono);font-size:13px;font-weight:500;white-space:nowrap;color:var(--jynx)}
+  td.k.rent{color:var(--dim)}
+
+  .bar{display:flex;height:42px;border:1px solid var(--line);overflow:hidden;margin-top:6px}
+  .bar .loc{flex:0 0 70%;background:var(--jynx);display:flex;align-items:center;padding:0 18px}
+  .bar .ren{flex:1;background:var(--raised);display:flex;align-items:center;padding:0 18px}
+  .bar span{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+  .bar .loc span{color:#fff} .bar .ren span{color:var(--dim)}
+
+  .grow{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);margin:24px 0}
+  .grow div{background:var(--panel);display:grid;grid-template-columns:100px 1fr;gap:20px;padding:14px 20px;align-items:baseline}
+  .grow .w{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--jynx)}
+  .grow p{margin:0;font-size:14.5px;max-width:none}
+
+  .figure{border:1px solid var(--line);background:var(--panel);padding:24px;margin:26px 0;overflow-x:auto}
+
+  /* The context graph reads as an instrument display, so it stays dark in both
+     themes — a filament network on a light ground loses all of its contrast. */
+  .nn{position:relative;background:#05070A;border:1px solid var(--line);margin:26px 0;overflow:hidden;aspect-ratio:16/9;min-height:340px}
+  .nn canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .nn-ov{position:absolute;inset:0;pointer-events:none}
+  .nn-tag{position:absolute;transform:translate(-50%,-50%);font-family:var(--f-mono);font-size:9.5px;letter-spacing:.06em;white-space:nowrap;padding:2px 6px;border-radius:2px}
+  .nn-tag.on{background:#7C5CFC;color:#fff}
+  .nn-tag.off{background:rgba(255,255,255,.10);color:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.16)}
+  .nn-tag.gh{color:rgba(255,255,255,.30)}
+  .nn-hud{position:absolute;left:22px;top:22px;display:flex;flex-direction:column;gap:9px;pointer-events:none}
+  .nn-t{font-family:var(--f-mono);font-size:10px;letter-spacing:.22em;color:rgba(255,255,255,.62)}
+  .nn-r{display:flex;align-items:baseline;gap:8px}
+  .nn-r b{font-family:var(--f-mono);font-size:17px;font-weight:500;color:#9B82FF;letter-spacing:-.02em}
+  .nn-r span{font-family:var(--f-mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.42)}
+  .nn-ft{position:absolute;left:22px;bottom:18px;font-family:var(--f-mono);font-size:9px;letter-spacing:.16em;color:rgba(255,255,255,.34)}
+  @media (max-width:620px){.nn{aspect-ratio:4/3}.nn-hud{left:14px;top:14px}.nn-tag{font-size:8.5px}}
+  .figure svg{display:block;width:100%;height:auto;min-width:540px}
+  .cap{font-size:13.5px;color:var(--dim);margin:16px 0 0;max-width:64ch}
+
+  .key{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-top:20px}
+  .key h4{font-size:13px;margin-bottom:8px}
+  .key ol{margin:0;padding-left:18px;font-size:13.5px;color:var(--dim);line-height:1.62}
+  .key .now h4{color:var(--green)} .key .plan h4{color:var(--jynx)}
+  .key .cheap h4{color:var(--dim)} .key .dont h4{color:var(--red)}
+
+  .rk{border:1px solid var(--line);background:var(--panel);margin:16px 0}
+  .rk .q{padding:17px 24px 15px;border-bottom:1px solid var(--line)}
+  .rk .q .eyebrow{color:var(--red);display:block;margin-bottom:6px}
+  .rk .q p{margin:0;font-size:16px;font-weight:600;max-width:60ch}
+  .rk .a{padding:17px 24px;background:var(--raised)}
+  .rk .a h4{font-size:17px;color:var(--green);margin-bottom:6px}
+  .rk .a p{margin:0;font-size:15px;max-width:60ch}
+  .rk .a p + p{margin-top:.7em}
+
+  .years{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);margin:24px 0}
+  .yr{background:var(--panel);display:grid;grid-template-columns:68px 1fr 108px;gap:22px;padding:18px 22px;align-items:baseline}
+  .yr .y{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim)}
+  .yr h4{font-size:16px;margin-bottom:4px}
+  .yr p{font-size:14.5px;color:var(--dim);margin:0;max-width:none}
+  .yr .arr{font-family:var(--f-mono);font-size:19px;font-weight:500;color:var(--jynx);text-align:right;letter-spacing:-.02em}
+
+  ul.plain{list-style:none;padding:0;margin:0 0 1em}
+  ul.plain li{position:relative;padding-left:22px;margin-bottom:9px;max-width:62ch}
+  ul.plain li::before{content:"";position:absolute;left:2px;top:.64em;width:7px;height:1px;background:var(--jynx)}
+
+  .try{border:1px solid var(--jynx);background:var(--panel);padding:26px 28px;margin:26px 0}
+  .try h3{font-size:19px;margin-bottom:8px}
+  .try p{font-size:15.5px;margin-bottom:.7em}
+  .try p:last-child{margin-bottom:0}
+  .try kbd{font-family:var(--f-mono);font-size:12px;background:var(--raised);border:1px solid var(--line);border-radius:4px;padding:2px 7px;color:var(--jynx);font-weight:500}
+
+  .ask{border:1px solid var(--jynx);background:var(--panel);padding:32px 34px}
+  footer{margin-top:76px;padding-top:22px;border-top:1px solid var(--line);font-family:var(--f-mono);font-size:11px;color:var(--dim);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+  @media (max-width:680px){
+    .grid2,.yr,.layer,.grow div{grid-template-columns:1fr;gap:8px}
+    .yr .arr{text-align:left}
+    .bar .loc{flex-basis:64%}
+  }
+  :focus-visible{outline:2px solid var(--jynx);outline-offset:3px}
+</style>
+</head>
+<body>
+<!-- jynx-topbar -->
+<style>
+  /* Sticky, slim, and the only masthead: the wordmark and the confidentiality
+     mark ride with you instead of scrolling away, and the help is a <details>
+     element so it opens with no JavaScript at all — the one viewer where an
+     explanation matters most is the one that runs nothing. */
+  .jx-topwrap{position:sticky;top:0;z-index:40;background:#0F1214;border-bottom:1px solid #262C32}
+  .jx-top{display:flex;align-items:center;gap:10px;padding:9px 16px;
+    padding-top:calc(9px + env(safe-area-inset-top));
+    font-family:'Space Grotesk','Segoe UI',sans-serif}
+  .jx-help{position:relative}
+  .jx-help > summary{
+    list-style:none;display:flex;align-items:center;justify-content:center;
+    width:22px;height:22px;border-radius:50%;border:1px solid #3A424A;color:#8A9199;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;flex:none;
+  }
+  .jx-help > summary::-webkit-details-marker{display:none}
+  .jx-help > summary:hover{border-color:#9B82FF;color:#9B82FF}
+  .jx-help[open] > summary{background:#9B82FF;border-color:#9B82FF;color:#12131A}
+  .jx-helpbox{
+    position:absolute;top:30px;left:-8px;width:290px;max-width:calc(100vw - 24px);
+    background:#171B1F;border:1px solid #2B3138;border-radius:12px;padding:14px 15px;
+    box-shadow:0 14px 38px rgba(0,0,0,.55);color:#EDEFF1;
+    font-family:'Assistant','Segoe UI',sans-serif;font-size:13px;line-height:1.55;
+  }
+  .jx-helpbox b{display:block;font-family:'Space Grotesk',sans-serif;font-size:13.5px;color:#9B82FF;margin-bottom:7px}
+  .jx-helpbox ol{margin:0 0 10px;padding-left:17px}
+  .jx-helpbox li{margin-bottom:5px}
+  .jx-helpbox p{margin:0;color:#8A9199;font-size:12px}
+  .jx-eyes{display:flex;gap:4.5px;align-items:center;flex:none;margin-left:2px}
+  .jx-eyes i{width:5.5px;height:5.5px;border-radius:50%;background:#9B82FF;display:block;animation:jxtb 6s infinite}
+  .jx-eyes i:last-child{animation-delay:.11s}
+  @keyframes jxtb{0%,96.5%,100%{height:5.5px}98%{height:1.5px}}
+  .jx-wm{font-weight:700;font-size:13px;letter-spacing:.05em;color:#9B82FF;flex:none}
+  .jx-conf{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#666E76;flex:none}
+  .jx-open{margin-left:auto;flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:#9B82FF;border:1px solid #3A424A;border-radius:7px;padding:5px 11px;
+    text-decoration:none;cursor:pointer;background:transparent}
+  .jx-open:hover{border-color:#9B82FF}
+  @media (max-width:520px){
+    .jx-top{gap:8px;padding:8px 12px;padding-top:calc(8px + env(safe-area-inset-top))}
+    .jx-conf{display:none}
+    .jx-helpbox{left:-4px}
+  }
+  @media print{.jx-topwrap{display:none}}
+  @media (prefers-reduced-motion:reduce){.jx-eyes i{animation:none}}
+</style>
+<div class="jx-topwrap">
+  <div class="jx-top">
+    <details class="jx-help" id="jx-help">
+      <summary aria-label="How to use this document">?</summary>
+      <div class="jx-helpbox">
+        <b>Jynx lives in this page</b>
+        Point at anything, leave a note, draw on it. Nothing is sent anywhere —
+        your comments stay in this browser.
+        <ol style="margin-top:10px">
+          <li>Tap <strong>Open</strong>, or the bubble in the corner.</li>
+          <li>Pick a tool, then tap something on the page.</li>
+          <li><strong>Copy notes</strong> sends them back to me.</li>
+        </ol>
+        <b style="margin-top:4px">Reading this in a message?</b>
+        <ol>
+          <li>Tap the <strong>share</strong> icon.</li>
+          <li>Choose <strong>Open in Safari</strong> — or <strong>Save to
+          Files</strong>, then open it from there.</li>
+        </ol>
+        <p>Previews inside messaging apps don't run anything. A real browser tab
+        does. <span style="color:#9B82FF">Soon to be a native app ;)</span></p>
+      </div>
+    </details>
+    <span class="jx-eyes"><i></i><i></i></span>
+    <span class="jx-wm">JYNX</span>
+    <button class="jx-open" id="jx-top" type="button">Open</button>
+  </div>
+</div>
+<!-- /jynx-topbar -->
+<div class="wrap">
+
+<header>
+  <div class="top">
+    <div class="wordmark">JYNX</div>
+    <span class="eyebrow">Confidential · September 2026</span>
+  </div>
+  <div class="doc">Fornote</div>
+  <h1>You are <em>the centre.</em> Everything else is distraction.</h1>
+  <p class="stand">
+    I learned this in SF recon. <b>Any tool that needs your attention is a
+    liability.</b> You have a mission. Nothing touches the focus. Jynx applies
+    that rule to <b>execution</b> — the code, the document, the deck, whatever
+    the team ships — for one person, a team, or an enterprise.
+  </p>
+  <div class="byline"><b>Rio</b><span>Founder</span><span>Jynx</span></div>
+</header>
+
+<section>
+  <span class="eyebrow">The rule</span>
+  <h2>Kit that asks for attention gets people killed</h2>
+  <p>
+    In SF recon you carry what the mission needs and nothing else. Every gram,
+    every screen, every device that wants a glance gets one question: does this
+    serve the mission, or does the mission now serve it? Heads-up displays, live
+    feeds, smarter kit — the technology was never the problem. Attending to it
+    was.
+  </p>
+  <div class="pull">
+    <p>Anything that takes attention from the objective is a liability, however good it is. The person stays at the centre. The kit serves them or it gets left behind.</p>
+  </div>
+  <p>
+    That is the failure of this generation of AI tools, and nobody is naming it.
+    You manage the context. You babysit the agent. You learn the prompt. You
+    check the dashboard. The tool became the mission.
+  </p>
+</section>
+
+<section>
+  <span class="eyebrow">Origin</span>
+  <h2>A system, a missing tool, and a thing that now builds itself</h2>
+  <p>
+    In SF recon I built systems for teams under load. You learn to design for
+    the person, not the capability, because a capability nobody can use at
+    three in the morning is dead weight.
+  </p>
+  <p>
+    Years later I was building a production web application and the same gap
+    turned up. I could see what was wrong on a screen and I had to leave the
+    screen to fix it — open the editor, find the file, describe to a tool
+    something I was already looking at. The system was missing a tool. So I
+    built it: click the element, say what should change, let the machine work
+    out the rest.
+  </p>
+  <p>
+    It ran daily for months, and the people using it were not only engineers —
+    they were whoever owned the outcome. That is the part that matters: the
+    person accountable for a thing could act on it directly, at professional
+    quality, with review and tests intact. Earlier this year I pulled it into
+    its own repository. That is Jynx.
+  </p>
+  <div class="pull">
+    <p>Everything since has been built by the method it sells. The company runs on its own product, and that is not a slogan — it is the commit history.</p>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Readiness</span>
+  <h2>Proven in use, not in a demo</h2>
+  <p class="kick">
+    Two different things get confused when a company says "it works." I am
+    separating them here, because they carry different risk and an investor
+    should price them differently.
+  </p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>What</th><th>Readiness</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>The capability</strong><br><span style="color:var(--dim)">point → context → executed change</span></td>
+          <td class="num" style="color:var(--green)"><b>TRL 7</b><br>operational environment</td>
+          <td>Ran daily for months inside a live production application. Used to build substantial infrastructure components delivered into a defence programme, and by small teams in testing. Non-engineers used it without training.</td>
+        </tr>
+        <tr>
+          <td><strong>The packaged product</strong><br><span style="color:var(--dim)">installable, multi-tenant, self-hosted</span></td>
+          <td class="num" style="color:var(--jynx)"><b>TRL 7 → 9</b><br>four months</td>
+          <td>Extracted, re-architected behind enforced boundaries, and being packaged right now. What is left is the execution layer and the install path — known work, on a dated plan.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="pull">
+    <p>The technology is proven and the packaging is four months out. That is the right order round — most companies at this stage have it the other way and haven't noticed yet.</p>
+  </div>
+  <p>
+    It matters where it was proven. Defence work is the least forgiving
+    environment software gets built in: no tolerance for surprise, every change
+    traceable, and reviewers who ask what happens when it is wrong. A tool that
+    survived being useful there is not a tool that only demos well.
+  </p>
+  <p>
+    Small teams are in testing now and moving to production. The raise funds one
+    bridge: from a capability that already works to a product other companies
+    install themselves. Not a discovery phase — a packaging phase, with a date
+    on it.
+  </p>
+</section>
+
+<section>
+  <span class="eyebrow">The shift</span>
+  <h2>Nobody is "just front-end" any more</h2>
+  <p>
+    The job changed underneath everyone. Being excellent at one layer used to be
+    a career. Now the work is <strong>execution</strong> — carrying something
+    from noticed to shipped, across whatever it touches, without a relay of
+    tickets between specialists. The people compounding fastest right now are
+    not the best coders. They are the best executors.
+  </p>
+  <p>
+    Every AI coding tool aims at the two hours where fingers are on a keyboard.
+    That was never the expensive part. The expensive part is everything around
+    it: locating the change, knowing what it touches, knowing who owns it,
+    getting it reviewed, proving it works.
+  </p>
+  <p>
+    The alternative is the machinery every company over fifty people already
+    has: a ticket, a board, a triage call, three tools that sync badly, and a
+    fortnight in which the actual job quietly becomes <em>explaining why this
+    one is not mine</em>. Nobody chose that. It accumulated. And every layer of
+    it was added by someone reasonable solving a real problem.
+  </p>
+  <div class="pull">
+    <p>The mission became the ticket. Then the ticket became the job. Jynx deletes the middle: see it, say it, it is fixed.</p>
+  </div>
+  <p>
+    This is not about skipping the craft — it is about deleting the overhead
+    between knowing what to do and it being done. Execution and delivery, with
+    the review and the tests still in place, and nothing in between.
+  </p>
+  <p>
+    None of that is specific to code. A slide with the wrong number, a clause
+    that contradicts the one above it, a drawing whose tolerance changed last
+    week — same shape of problem, same expensive gap between the person who
+    spots it and the person who can act. <strong>Point at it, say what is wrong,
+    get it back done.</strong> One gesture across everything a team ships, and
+    the same loop underneath whether it is one developer, a daily standup, a
+    product team or a regulated enterprise.
+  </p>
+</section>
+
+<section>
+  <span class="eyebrow">The state of it</span>
+  <h2>Code that works and nobody reads</h2>
+  <div class="grid2">
+    <div class="bad">
+      <h4>What the industry shipped</h4>
+      <ul>
+        <li>Agents that produce working code nobody has read, in volumes nobody can review</li>
+        <li>Text interfaces: generic, wordy, and blind to what you were looking at</li>
+        <li>Context you assemble by hand, paste, and re-paste every session</li>
+        <li>Tools that make the person who could already do it slightly faster</li>
+        <li>A dashboard for every capability, and a new thing to check</li>
+      </ul>
+    </div>
+    <div class="good">
+      <h4>What a team actually needs</h4>
+      <ul>
+        <li>To point at the thing and say what's wrong, in their own words</li>
+        <li>Context gathered by the system, because it was already watching</li>
+        <li>Work that arrives reviewed, tested, and attributable</li>
+        <li>The people who notice problems able to resolve them</li>
+        <li>Nothing new to check. It comes to you.</li>
+      </ul>
+    </div>
+  </div>
+  <p>
+    Software delivery did not get faster in the last two years. Typing got
+    faster. The queue between noticing something and it being fixed is exactly
+    as long as it was — a support lead files a ticket, a designer files a
+    ticket, a founder files a ticket, and a fortnight later somebody gets to it.
+  </p>
+</section>
+
+<section>
+  <span class="eyebrow">The race</span>
+  <h2>We're not in it</h2>
+  <p class="kick">
+    Everyone is watching the wrong scoreboard. Which lab is ahead this quarter
+    is a spectator sport, and it changes nothing about whether your support lead
+    can fix the sentence she reads forty times a week.
+  </p>
+  <p>
+    We own our models because owned models are <em>better oriented</em>, not
+    because they are bigger. A small model that has seen ten thousand changes to
+    <em>your</em> codebase beats a frontier model seeing it for the first time,
+    at a hundredth of the cost, on your own network. Orientation beats
+    horsepower on the work Jynx actually does.
+  </p>
+  <div class="pull">
+    <p>The product is not the model. The product is the team, the context, and the graph that connects them.</p>
+  </div>
+  <p>
+    That graph is the thing nobody can buy, copy or catch up to. It is built out
+    of who owns what, what changed and why, what was tried and worked, and who
+    to ask when it didn't — accumulated inside one company, by the people who
+    work there, every day. The frontier labs are welcome to the race. We are
+    building the thing that makes their output useful.
+  </p>
+</section>
+
+<section>
+  <span class="eyebrow">The map</span>
+  <h2>Jynx is the team</h2>
+  <p class="kick">
+    Not a tool the team operates. The layer the team, the context and the agents
+    all meet in — with the person at the centre and the product as the output.
+  </p>
+  <div class="nn" id="nn">
+    <canvas id="nn-c" aria-label="Context network with the operator at the centre"></canvas>
+    <div class="nn-ov" id="nn-ov"></div>
+    <div class="nn-hud">
+      <div class="nn-t">CONTEXT GRAPH</div>
+      <div class="nn-r"><b>70%</b><span>resolved locally</span></div>
+      <div class="nn-r"><b>1,651</b><span>tokens per session</span></div>
+      <div class="nn-r"><b>0</b><span>assembled by hand</span></div>
+    </div>
+    <div class="nn-ft">OPERATOR AT CENTRE · CONTEXT ORBITS · OUTPUT → THE PRODUCT</div>
+  </div>
+  <p class="cap">
+    <strong>These are the layers.</strong> Not the ones an org chart draws — the
+    ones that actually build the thing: what the product is, who owns which part
+    of it, what was tried and what worked, what the business needs next, and the
+    goal everyone is aiming at. Every company has them. In most they live in
+    separate tools, in different people's heads, and go stale between meetings.
+  </p>
+  <p class="cap">
+    Jynx holds them in one place and spends them on your behalf, so a comment
+    from anyone — support, design, sales, the founder — arrives already carrying
+    the team's whole understanding of what it touches. Nothing in that graph is
+    something you assemble, name, configure or remember. You point; it carries.
+  </p>
+</section>
+
+<section>
+  <span class="eyebrow">The loop</span>
+  <h2>Point to merged</h2>
+  <div class="loop">
+    <div><div class="s">01</div><h4>Point</h4><p>Click it. Say what's wrong. Draw on it. Talk to it.</p></div>
+    <div><div class="s">02</div><h4>Context</h4><p>Component, file, owner, recent changes, covering tests. Assembled, not asked for.</p></div>
+    <div><div class="s">03</div><h4>Route</h4><p>Classify, then send it to the model that should handle it. Most never leaves your network.</p></div>
+    <div><div class="s">04</div><h4>Execute</h4><p>An agent takes its own environment, makes the change, runs the real tests.</p></div>
+    <div><div class="s">05</div><h4>Return</h4><p>A proposal, or a merge if that's the ceiling you set. The outcome is recorded either way.</p></div>
+  </div>
+  <p>
+    Step two is the product. Anyone can send a sentence to a model. Knowing which
+    forty lines of two hundred thousand that sentence is about — and
+    <strong>who owns those forty lines</strong> — is the work, and pointing is
+    what makes it knowable.
+  </p>
+  <p>
+    Ownership runs through everything. Every path has exactly one owner, so a
+    comment routes to a person rather than a queue, an agent knows what it may
+    not touch, and "who do I ask about this" stops being a question anyone has
+    to ask. Point at something, tag a teammate, and it reaches them wherever they
+    are — that is not a feature bolted on top, it is the same map the models
+    read.
+  </p>
+</section>
+
+<section>
+  <span class="eyebrow">Execution</span>
+  <h2>Every agent gets its own room</h2>
+  <p class="kick">
+    This is where delivery actually changes, and it is the half of the industry
+    nobody has built properly.
+  </p>
+  <p>
+    An agent asked to do real work needs somewhere to do it: a checkout of the
+    repository, a shell, the ability to install, run and fail. Today that is
+    either your laptop — where it blocks you, breaks things and holds your
+    credentials — or it is nothing, and the agent hands you a diff and stops
+    caring whether it compiles.
+  </p>
+  <p>
+    In Jynx every task gets its own ephemeral environment. Its own branch,
+    scoped credentials that expire in minutes, no network except what it is
+    allowed, torn down when the job ends. <strong>Ten of them run at once and
+    nobody's machine is touched.</strong>
+  </p>
+  <div class="grid2">
+    <div class="bad">
+      <h4>Agent on your machine</h4>
+      <ul>
+        <li>Blocks the person while it runs</li>
+        <li>Holds credentials that can reach everything</li>
+        <li>One at a time, serially</li>
+        <li>"Works on my machine" — and only there</li>
+        <li>Failure leaves your working tree in an unknown state</li>
+      </ul>
+    </div>
+    <div class="good">
+      <h4>Agent in its own room</h4>
+      <ul>
+        <li>You carry on. It reports when it's done</li>
+        <li>Credentials scoped to one job, expiring in minutes</li>
+        <li>Ten tasks in parallel, no collisions</li>
+        <li>Same environment every time, so results are comparable</li>
+        <li>Failure is discarded with the container</li>
+      </ul>
+    </div>
+  </div>
+  <p>
+    That environment is also the security boundary the whole product rests on,
+    which is why it is the piece we build ourselves rather than buy. It is what
+    makes autonomy sellable to somebody with a compliance team.
+  </p>
+</section>
+
+<section>
+  <span class="eyebrow">The stack</span>
+  <h2>Four layers, one rule</h2>
+  <p class="kick">Nothing reaches upward. A check refuses any commit that breaks it.</p>
+  <div class="stack">
+    <div class="layer"><div class="nm">surface<small>their app</small></div>
+      <p><b>Thin, and worthless if taken.</b> Renders the overlay, captures what you pointed at. No prompts, no model names, no keys, no logic.</p></div>
+    <div class="layer"><div class="nm">kernel<small>the rules</small></div>
+      <p><b>Every decision lives here.</b> Who may change what, how far agents may go, what a proposal is. One place, so it cannot disagree with itself.</p></div>
+    <div class="layer"><div class="nm">mesh<small>the models</small></div>
+      <p><b>Where work is routed.</b> Classify, retrieve, plan, patch, verify — mostly on models we own, the hard tail rented.</p></div>
+    <div class="layer"><div class="nm">runner<small>the rooms</small></div>
+      <p><b>The security boundary.</b> Ephemeral containers, per-job credentials, egress allowlist. Built in-house because everything rests on it.</p></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">The mesh</span>
+  <h2>Six models. Five are ours.</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Model</th><th>Size</th><th>What it does</th><th>Build</th></tr></thead>
+      <tbody>
+        <tr><td class="k">locator</td><td class="num">embed + rerank</td><td><strong>The crown jewel.</strong> A pointed-at element and a sentence in; the files that matter out.</td><td class="num">weeks</td></tr>
+        <tr><td class="k">intent</td><td class="num">0.5–3B</td><td>What kind of work this is. Classification, and it decides everything downstream.</td><td class="num">days</td></tr>
+        <tr><td class="k">planner</td><td class="num">7–8B</td><td>Steps and acceptance criteria, trained on our record of plans that worked and plans that didn't.</td><td class="num">weeks</td></tr>
+        <tr><td class="k">patcher</td><td class="num">3–7B</td><td>The edit, for changes that are mechanical rather than clever. That's most real traffic.</td><td class="num">weeks</td></tr>
+        <tr><td class="k">verifier</td><td class="num">3–7B</td><td>Did this do what was asked. Nobody else can build ours — it learns from our outcomes.</td><td class="num">weeks</td></tr>
+        <tr><td class="k rent">frontier</td><td class="num">rented</td><td>The hard tail. Rework this flow, migrate this pattern, change this schema.</td><td class="num">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="bar"><div class="loc"><span>Models we own</span></div><div class="ren"><span>Rented</span></div></div>
+  <p style="margin-top:14px">
+    A model you own answers in milliseconds, on your own network, for nothing.
+    That is not a saving. It is the difference between raising a ticket and
+    watching it happen.
+  </p>
+</section>
+
+<section>
+  <span class="eyebrow">The other labs</span>
+  <h2>They're suppliers, not rivals</h2>
+  <p>
+    We are not racing anyone to build a better general model. We would lose, and
+    it isn't the business. We buy the frontier the way a manufacturer buys steel.
+  </p>
+  <p>
+    When a lab ships something better next quarter, our hard tail gets cheaper
+    and smarter and we did nothing. Every open-weight release makes our mesh
+    stronger for free. <strong>Their progress is our margin.</strong>
+  </p>
+  <div class="pull">
+    <p>Every escalation to a frontier model is a labelled example of exactly what our own models are weak at. We pay for the answer once and keep it forever.</p>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">The code</span>
+  <h2>Written to be read by people</h2>
+  <p>
+    There is a failure mode in this market that nobody selling into it wants to
+    name: a year of generated code that works, that nobody has read, and that no
+    one on the team can safely change. It passes review because it looks
+    plausible. It compounds because it is fast. And then something breaks and
+    the company discovers it owns a codebase it cannot reason about.
+  </p>
+  <div class="pull">
+    <p>Every change here carries the reasoning behind it, in a form the next person can argue with. Not a summary of what happened — why, and what was rejected.</p>
+  </div>
+  <p>
+    That is enforced rather than encouraged. Layer boundaries are checked by a
+    machine on every commit. A rule nothing checks is a wish. Decisions are
+    recorded with the argument attached, because a decision without its
+    reasoning gets reversed by the next person who assumes it was arbitrary.
+    Anything irreversible has a human on it.
+  </p>
+  <p>
+    <strong>This is the standard we hold our own work to, and it is the standard
+    Jynx enforces on the work it does for you.</strong> A tool that produces code
+    faster than your team can read it has not made you faster. It has moved the
+    bill.
+  </p>
+</section>
+
+<section>
+  <span class="eyebrow">The compounding</span>
+  <h2>It becomes yours</h2>
+  <div class="grow">
+    <div><span class="w">Every call</span><p>The verifier says pass or fail. A labelled outcome, free, on work someone was doing anyway.</p></div>
+    <div><span class="w">Every comment</span><p>One more mapping between something on a screen and something in a repository — in <em>your</em> repository, with your conventions.</p></div>
+    <div><span class="w">Every day</span><p>The locator sharpens. Fewer wrong files, fewer retries, less rented inference.</p></div>
+    <div><span class="w">Every month</span><p>More work clears locally. Cost per task falls, latency falls, the share sent outside drops.</p></div>
+    <div><span class="w">Every year</span><p>It knows your product better than anyone you could hire this quarter, and it doesn't leave.</p></div>
+  </div>
+  <p>
+    A competitor copies the architecture in a quarter — routing is plumbing.
+    Nobody copies a year of what worked inside your codebase. It isn't on the
+    open internet and it cannot be bought.
+  </p>
+</section>
+
+<section>
+  <span class="eyebrow">Tech sheet</span>
+  <h2>Numbers, not adjectives</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Measure</th><th>Now</th><th>What it means</th></tr></thead>
+      <tbody>
+        <tr><td>Context per work session</td><td class="num"><b>1,651</b> vs 19,585 tokens</td><td>Same information, aimed instead of dumped. Measured on this repository, every session, every person.</td></tr>
+        <tr><td>Answering "who owns this?"</td><td class="num"><b>25</b> vs 1,507 tokens</td><td>A generated answer instead of a file. 60× cheaper, and it cannot be out of date.</td></tr>
+        <tr><td>Built by</td><td class="num">2 devs + 1 non-dev</td><td>74 commits, 132 files, 2 days — working exactly the way the product works.</td></tr>
+        <tr><td>Enforced boundaries</td><td class="num">4 automated gates</td><td>Layer direction, ownership, session records, protected files. A rule nothing checks is a wish.</td></tr>
+        <tr><td>In the browser</td><td class="num">0 lines of logic</td><td>No prompts, no model names, no routing, no keys. Nothing worth taking is shipped.</td></tr>
+        <tr><td>Human gates to production</td><td class="num">1</td><td>Placed exactly where an action stops being reversible. Everything else is automatic.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    The winner in agentic software will not be whoever calls the biggest model.
+    It will be whoever sends the smallest, best-aimed context — and gets it right
+    the first time.
+  </p>
+</section>
+
+<section>
+  <span class="eyebrow">Skills</span>
+  <h2>It builds its own tools</h2>
+  <p>
+    A skill is a small named capability with the context it needs: write our
+    release notes, audit this for accessibility, keep the design tokens honest.
+    Anyone can write one. Jynx can write one — when a team does the same thing
+    three times, it has three worked examples and turns them into a skill with
+    its own instructions and memory.
+  </p>
+  <p>
+    <strong>That is also why every platform is native rather than ported.</strong>
+    The core does not know what a browser is. It knows a <em>target</em> — a
+    rendered element, a file, a region of a document, a slide, an object in a
+    model. A new surface is a new target type over the same kernel.
+  </p>
+  <p>
+    Skills are the community, and the community is the distribution: a public
+    registry, a revenue share for authors, the same review path as any other
+    change. Nobody builds a competitor out of a skill registry. A team that has
+    one stops being replaceable.
+  </p>
+</section>
+
+<section>
+  <span class="eyebrow">The road</span>
+  <h2>One kernel, many products</h2>
+  <p class="kick">
+    Same gesture, same context graph, same execution loop. What changes is who
+    is holding it and what they are shipping — code, documents, decks, and the
+    surfaces after that.
+  </p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Product</th><th>Who</th><th>Why they buy</th><th>When</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Solo</td><td>One developer</td><td>Fix what you see without leaving what you were doing. Priced to be an easy yes.</td><td class="num">first</td></tr>
+        <tr><td class="k">Startup</td><td>Two to ten, accelerators</td><td>The team I came from and the one I understand. No process, no ticket queue, everyone shipping. Jynx is the missing half of the team, at the price of none of one.</td><td class="num">first</td></tr>
+        <tr><td class="k">Teams</td><td>Product, design, support</td><td>Execution throughput across the whole team, with review and ownership intact. This is the business.</td><td class="num">year 1</td></tr>
+        <tr><td class="k">Enterprise</td><td>Regulated, large</td><td>Self-hosted, audited, autonomy ceilings per project, every action attributable.</td><td class="num">year 2</td></tr>
+        <tr><td class="k">Sovereign</td><td>Government, defence</td><td>Air-gapped, their hardware, weights they hold. Nobody with a cloud API can follow us here.</td><td class="num">year 3</td></tr>
+        <tr><td class="k">Daily</td><td>Anyone</td><td>Jynx in the corner for work that isn't code. The assistant that does the thing instead of describing it.</td><td class="num">later</td></tr>
+        <tr><td class="k">Mobile</td><td>Anyone</td><td>See it on your phone, say what's wrong, it's fixed before you're back at a desk.</td><td class="num">later</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    The last two are not on the roadmap I am asking you to fund. They are the
+    reason the foundation is shaped the way it is now rather than retrofitted
+    later.
+  </p>
+</section>
+
+<section>
+  <span class="eyebrow">Where we spend</span>
+  <h2>Effort against impact</h2>
+  <p class="kick">At three people the top-left quadrant is the entire job, and the bottom-right is where startups go to die.</p>
+  <div class="figure">
+    <svg viewBox="0 0 620 400" role="img" aria-label="Effort against impact, four quadrants">
+      <rect x="56" y="26" width="252" height="164" fill="currentColor" opacity=".045"/>
+      <rect x="308" y="26" width="252" height="164" fill="currentColor" opacity=".02"/>
+      <line x1="56" y1="354" x2="596" y2="354" stroke="currentColor" opacity=".28"/>
+      <line x1="56" y1="26" x2="56" y2="354" stroke="currentColor" opacity=".28"/>
+      <line x1="308" y1="26" x2="308" y2="354" stroke="currentColor" opacity=".16" stroke-dasharray="3 4"/>
+      <line x1="56" y1="190" x2="596" y2="190" stroke="currentColor" opacity=".16" stroke-dasharray="3 4"/>
+      <text x="56" y="378" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.6" fill="currentColor" opacity=".55">EFFORT →</text>
+      <text x="16" y="190" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.6" fill="currentColor" opacity=".55" transform="rotate(-90 16 190)">IMPACT →</text>
+      <text x="68" y="44" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.4" fill="#159865">DO NOW</text>
+      <text x="320" y="44" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.4" fill="#7C5CFC">PLAN FOR</text>
+      <text x="68" y="344" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.4" fill="currentColor" opacity=".5">CHEAP</text>
+      <text x="320" y="344" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.4" fill="#C23B2E">DON'T</text>
+      <g font-family="IBM Plex Mono, monospace" font-size="11" font-weight="500">
+        <circle cx="96"  cy="72"  r="13" fill="#159865"/><text x="96"  y="76"  text-anchor="middle" fill="#fff">1</text>
+        <circle cx="168" cy="104" r="13" fill="#159865"/><text x="168" y="108" text-anchor="middle" fill="#fff">2</text>
+        <circle cx="238" cy="82"  r="13" fill="#159865"/><text x="238" y="86"  text-anchor="middle" fill="#fff">3</text>
+        <circle cx="126" cy="150" r="13" fill="#159865"/><text x="126" y="154" text-anchor="middle" fill="#fff">4</text>
+        <circle cx="392" cy="66"  r="13" fill="#7C5CFC"/><text x="392" y="70"  text-anchor="middle" fill="#fff">5</text>
+        <circle cx="470" cy="110" r="13" fill="#7C5CFC"/><text x="470" y="114" text-anchor="middle" fill="#fff">6</text>
+        <circle cx="352" cy="146" r="13" fill="#7C5CFC"/><text x="352" y="150" text-anchor="middle" fill="#fff">7</text>
+        <circle cx="530" cy="150" r="13" fill="#7C5CFC"/><text x="530" y="154" text-anchor="middle" fill="#fff">8</text>
+        <circle cx="110" cy="252" r="13" fill="currentColor" opacity=".3"/><text x="110" y="256" text-anchor="middle" fill="currentColor">9</text>
+        <circle cx="196" cy="300" r="13" fill="currentColor" opacity=".3"/><text x="196" y="304" text-anchor="middle" fill="currentColor">10</text>
+        <circle cx="404" cy="266" r="13" fill="#C23B2E"/><text x="404" y="270" text-anchor="middle" fill="#fff">11</text>
+        <circle cx="486" cy="238" r="13" fill="#C23B2E"/><text x="486" y="242" text-anchor="middle" fill="#fff">12</text>
+        <circle cx="546" cy="300" r="13" fill="#C23B2E"/><text x="546" y="304" text-anchor="middle" fill="#fff">13</text>
+        <circle cx="356" cy="312" r="13" fill="#C23B2E"/><text x="356" y="316" text-anchor="middle" fill="#fff">14</text>
+      </g>
+    </svg>
+    <div class="key">
+      <div class="now"><h4>Do now</h4><ol><li>The local-share experiment</li><li>The runner and its rooms</li><li>Three design partners</li><li>Record every outcome from comment one</li></ol></div>
+      <div class="plan"><h4>Plan for</h4><ol start="5"><li>Locator and verifier</li><li>Self-hosted build</li><li>Skills registry</li><li>Sovereign deployment</li></ol></div>
+      <div class="cheap"><h4>Cheap, whenever</h4><ol start="9"><li>Site and documents</li><li>Solo tier</li></ol></div>
+      <div class="dont"><h4>Don't</h4><ol start="11"><li>Buy GPUs</li><li>Beat the frontier at general code</li><li>Build our own CI system</li><li>Mobile before Teams works</li></ol></div>
+    </div>
+  </div>
+  <p>
+    Number 4 is free today and impossible to reconstruct later. Number 11 is how
+    you end up with depreciating hardware and no product — we own the weights and
+    rent the metal until utilisation, not ambition, says otherwise.
+  </p>
+</section>
+
+<section>
+  <span class="eyebrow">Self-critique</span>
+  <h2>What could kill this</h2>
+
+  <div class="rk"><div class="q"><span class="eyebrow">01</span><p>A frontier lab ships this on a Tuesday.</p></div>
+    <div class="a"><h4>They sell tokens. This installs in someone else's product.</h4>
+      <p>Their surface is the developer's environment and it is winning. Ours is
+      the customer's own running application — their design system, permissions,
+      tenancy, compliance review. A services-shaped problem the labs keep
+      declining, because it doesn't scale the way selling inference does.</p>
+      <p>Different buyer, too. They sell a faster keyboard to an engineer. We
+      sell execution throughput to whoever is accountable for shipping.</p></div></div>
+
+  <div class="rk"><div class="q"><span class="eyebrow">02</span><p>Routing between local and frontier models is the consensus design of 2026. Funded companies already ship it.</p></div>
+    <div class="a"><h4>Routing is plumbing. The record is the asset.</h4>
+      <p>True, and I won't pretend otherwise in a room that knows it. Everyone
+      will have routing the way everyone has a database. Nobody else has
+      thousands of verified outcomes from inside one customer's codebase — and
+      that is what makes month twelve better than month one.</p></div></div>
+
+  <div class="rk"><div class="q"><span class="eyebrow">03</span><p>Fine-tuning five models is a lot of surface for a small team.</p></div>
+    <div class="a"><h4>We build two. We adapt the rest.</h4>
+      <p>The locator and the verifier are ours because they train on data only we
+      have. Intent, planner and patcher start as open-weight models with our
+      context on top. Building all five in year one is over-scoping in a lab
+      coat.</p></div></div>
+
+  <div class="rk"><div class="q"><span class="eyebrow">04</span><p>You need training data before you have customers.</p></div>
+    <div class="a"><h4>Open repositories bootstrap it. Customers compound it.</h4>
+      <p>Public repositories with rich issue and pull-request histories are a
+      legitimate cold start. Not as good as a customer's own record — good enough
+      to begin, and the design partners turn it into the real thing.</p></div></div>
+
+  <div class="rk"><div class="q"><span class="eyebrow">05</span><p>Three people, pre-revenue, and the packaged product isn't finished.</p></div>
+    <div class="a"><h4>The technology is at TRL 7. The packaging is the raise.</h4>
+      <p>Everything around the execution layer exists: surface, context capture,
+      queue, review, permissions, release path — with machine-enforced
+      boundaries between them. The capability has run daily in a live production
+      environment, including on defence infrastructure work, where being wrong
+      is expensive.</p>
+      <p>What is unfinished is turning a proven internal tool into something
+      other companies install. That is the kind of risk money actually reduces,
+      and it is a much better place to be than a polished product nobody has
+      used in anger.</p></div></div>
+</section>
+
+<section>
+  <span class="eyebrow">The numbers</span>
+  <h2>What has to be true</h2>
+  <p class="kick">Not a forecast. The shape the business takes, so the target is a plan.</p>
+  <div class="years">
+    <div class="yr"><div class="y">Year 1</div><div><h4>Prove the loop on other people's code</h4>
+      <p>Startups, agencies and product teams. Seats for the collaboration layer, inference metered or bring-your-own-key. Thirty to fifty small customers. This year buys evidence and training data, not revenue.</p></div><div class="arr">~$250K</div></div>
+    <div class="yr"><div class="y">Year 2</div><div><h4>Self-hosted, on the strength of the mesh</h4>
+      <p>Once most work clears locally, "it never leaves your network" sells to fintech, health and defence suppliers. Thirty to forty customers at $40–80K. Same product, different execution backend.</p></div><div class="arr">~$2.5M</div></div>
+    <div class="yr"><div class="y">Year 3</div><div><h4>Sovereign and air-gapped</h4>
+      <p>Thirty to fifty deployments at $150–400K, with the commercial base compounding underneath. This tier is the reason the local mesh exists.</p></div><div class="arr">~$10M+</div></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Try it</span>
+  <h2>This document is running Jynx</h2>
+  <div class="try">
+    <h3>The bubble in the corner is real — and it works on your phone</h3>
+    <p>
+      Tap it. Drag it anywhere you like; it stays where you put it. Then use it
+      on this document exactly as you would on your own product:
+    </p>
+    <p style="margin-bottom:.9em">
+      <kbd>1</kbd> Point at anything ·
+      <kbd>2</kbd> Area, to box in several ·
+      <kbd>3</kbd> Draw — <strong>close the shape and it becomes something you
+      can comment on</strong> ·
+      <kbd>4</kbd> Layers, to see what Jynx sees ·
+      <kbd>5</kbd> Comments
+    </p>
+    <p>
+      <strong>On a phone:</strong> press and hold anything, or just select some
+      text — Jynx takes over from there.
+    </p>
+    <p>
+      A comment is rarely about one thing, so any note can
+      <strong>link a second element</strong> — "this heading contradicts that
+      table" needs both. In the product that widens the context the models get,
+      and routes the work to whoever owns it.
+    </p>
+    <p>
+      Everything stays in your browser. <kbd>Copy notes</kbd> puts your comments
+      on the clipboard, so send them straight back to me and I will have shipped
+      the fixes before we speak.
+    </p>
+    <p style="margin-bottom:.9em">
+      <button id="jx-open-inline" style="font-family:var(--f-body);font-weight:700;font-size:14px;
+        background:var(--jynx);color:#fff;border:1px solid var(--jynx);border-radius:9px;
+        padding:11px 20px;cursor:pointer">Open Jynx here</button>
+    </p>
+    <noscript>
+      <p style="color:var(--yellow);font-size:14.5px;margin-bottom:0">
+        <strong>You are reading this in a preview that does not run
+        anything.</strong> Tap the Jynx bubble, or <strong>Share → Open in
+        Safari</strong>, and it comes alive.
+      </p>
+    </noscript>
+    <p style="color:var(--dim);font-size:14px;margin-bottom:0">
+      No bubble in the corner? Some in-app previews strip it. Use the button
+      above — or <strong>Share → Open in Safari</strong> for the full thing.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="ask">
+    <span class="eyebrow">The ask</span>
+    <h2>Pre-seed</h2>
+    <p>Two quarters, in this order, because each one gates the next:</p>
+    <ul class="plain">
+      <li><strong>The local-share experiment.</strong> Twenty real comments, a
+      rented GPU, two weeks. It tells us what share a small model solves with
+      good context, and every other number here depends on it.</li>
+      <li><strong>The runner</strong> — ephemeral environments, scoped
+      credentials, parallel execution — and the first installable release.</li>
+      <li><strong>Three design partners</strong> with real codebases and real
+      non-engineers using it daily.</li>
+      <li><strong>The locator and the verifier,</strong> trained on what those
+      partners generate.</li>
+      <li><strong>A self-hosted build</strong> for the first regulated customer.</li>
+    </ul>
+    <p style="margin-bottom:0">
+      The number I am underwriting is not revenue at this stage. It is the share
+      of work solved without renting intelligence — climbing every quarter, with
+      paying customers watching it climb.
+    </p>
+    <p style="margin:1.5em 0 0;font-family:var(--f-display);font-weight:700;font-size:clamp(20px,2.6vw,25px);letter-spacing:-.02em;color:var(--jynx)">
+      Get efficient. Jynx it.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <span>Jynx — fornote</span>
+  <span>Rio · September 2026</span>
+</footer>
+
+</div>
+
+<script>
+/* The context graph. Drawn rather than hand-authored: a few hundred filaments
+   as SVG path data would be unreadable and unmaintainable. Seeded, so it is
+   identical on every load — this is a diagram, not an animation. */
+(function () {
+  "use strict";
+  var host = document.getElementById("nn"), cv = document.getElementById("nn-c"), ov = document.getElementById("nn-ov");
+  if (!host || !cv || !ov) return;
+  var ctx = cv.getContext("2d");
+
+  var seed = 20260904;
+  function rnd() { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }
+  function rr(a, b) { return a + rnd() * (b - a); }
+
+  /* Normalised layout. The operator is the hub; everything else is context
+     that reaches it. Weight is how much traffic the edge carries. */
+  var NODES = [
+    { id:"you",   x:.50, y:.52, r:34, hub:true,  tag:"OPERATOR",           kind:"on" },
+    { id:"tgt",   x:.30, y:.24, r:26, tag:"TARGET · what you pointed at",  kind:"on" },
+    { id:"loc",   x:.72, y:.22, r:30, tag:"LOCATOR · 0.94",                kind:"on" },
+    { id:"own",   x:.85, y:.50, r:22, tag:"OWNER · packages/kernel",       kind:"off" },
+    { id:"hist",  x:.74, y:.79, r:24, tag:"HISTORY · 41 commits",          kind:"off" },
+    { id:"jrnl",  x:.44, y:.83, r:28, tag:"JOURNAL · 12,904 outcomes",     kind:"on" },
+    { id:"tests", x:.19, y:.70, r:20, tag:"TESTS · 318 covering",          kind:"off" },
+    { id:"agent", x:.13, y:.44, r:23, tag:"RUNNER · 6 rooms free",         kind:"on" },
+    { id:"mesh",  x:.62, y:.40, r:16, tag:"MESH",                          kind:"off" },
+    { id:"front", x:.90, y:.30, r:11, tag:"FRONTIER · 30%",                kind:"gh" }
+  ];
+  var EDGES = [
+    ["you","tgt",26],["you","loc",34],["you","own",16],["you","hist",18],
+    ["you","jrnl",30],["you","tests",14],["you","agent",24],["you","mesh",20],
+    ["tgt","loc",18],["loc","own",12],["loc","mesh",16],["mesh","front",9],
+    ["jrnl","loc",22],["hist","own",10],["tests","agent",12],["agent","mesh",14],
+    ["jrnl","agent",16],["hist","jrnl",12]
+  ];
+
+  var W = 0, H = 0, DPR = 1;
+
+  function place() {
+    ov.innerHTML = "";
+    NODES.forEach(function (n) {
+      var d = document.createElement("div");
+      d.className = "nn-tag " + n.kind;
+      d.textContent = n.tag;
+      // Sit the label clear of its own ring, biased away from the centre.
+      var dx = n.x - .5, dy = n.y - .5;
+      var m = Math.sqrt(dx * dx + dy * dy) || 1;
+      d.style.left = ((n.x + (dx / m) * .085) * 100) + "%";
+      d.style.top  = ((n.y + (dy / m) * .085) * 100) + "%";
+      if (n.hub) { d.style.left = "50%"; d.style.top = "calc(52% + 54px)"; }
+      ov.appendChild(d);
+    });
+  }
+
+  function draw() {
+    var box = host.getBoundingClientRect();
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = box.width; H = box.height;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    seed = 20260904;
+
+    var P = {};
+    NODES.forEach(function (n) { P[n.id] = { x: n.x * W, y: n.y * H, r: n.r * (W / 900) * 1.15 }; });
+
+    // dust
+    ctx.fillStyle = "rgba(255,255,255,.16)";
+    for (var i = 0; i < 90; i++) ctx.fillRect(rr(0, W), rr(0, H), 1, 1);
+
+    // filament bundles — the density is the point: context is many thin strands
+    EDGES.forEach(function (e) {
+      var a = P[e[0]], b = P[e[1]], n = e[2];
+      for (var i = 0; i < n; i++) {
+        var t = i / n;
+        var spread = 34 * (W / 900);
+        var mx = (a.x + b.x) / 2 + rr(-spread, spread);
+        var my = (a.y + b.y) / 2 + rr(-spread, spread);
+        ctx.beginPath();
+        ctx.moveTo(a.x + rr(-a.r, a.r) * .55, a.y + rr(-a.r, a.r) * .55);
+        ctx.quadraticCurveTo(mx, my, b.x + rr(-b.r, b.r) * .55, b.y + rr(-b.r, b.r) * .55);
+        ctx.strokeStyle = "rgba(255,255,255," + (0.05 + t * 0.10).toFixed(3) + ")";
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+      }
+    });
+
+    // rings
+    NODES.forEach(function (n) {
+      var q = P[n.id];
+      ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, Math.PI * 2);
+      ctx.strokeStyle = n.kind === "gh" ? "rgba(255,255,255,.22)" : "rgba(255,255,255,.55)";
+      ctx.lineWidth = n.hub ? 1.6 : 1;
+      ctx.stroke();
+      if (!n.hub) {
+        ctx.beginPath(); ctx.arc(q.x, q.y, q.r * 1.5, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255,255,255,.10)"; ctx.lineWidth = .7; ctx.stroke();
+      }
+    });
+
+    // the hub
+    var y = P.you;
+    var g = ctx.createRadialGradient(y.x, y.y, 0, y.x, y.y, y.r * 5);
+    g.addColorStop(0, "rgba(124,92,252,.42)"); g.addColorStop(1, "rgba(124,92,252,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(y.x, y.y, y.r * 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#7C5CFC"; ctx.beginPath(); ctx.arc(y.x, y.y, y.r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.font = "700 " + Math.round(15 * (W / 900) + 3) + "px 'Space Grotesk', sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("YOU", y.x, y.y);
+
+    // output arrow
+    ctx.strokeStyle = "rgba(124,92,252,.55)"; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(W - 62, H - 46); ctx.lineTo(W - 26, H - 46); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W - 20, H - 46); ctx.lineTo(W - 30, H - 51); ctx.lineTo(W - 30, H - 41);
+    ctx.closePath(); ctx.fillStyle = "rgba(124,92,252,.8)"; ctx.fill();
+  }
+
+  place();
+  draw();
+  var t;
+  window.addEventListener("resize", function () { clearTimeout(t); t = setTimeout(function () { place(); draw(); }, 120); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+})();
+</script>
+<!-- jynx-widget -->
+<style>
+  /* Jynx chrome is its own surface: dark regardless of the page under it, the
+     way the real product sits on top of a host app. Violet outline, rounded
+     squares, hotkey badges, a grip to drag by. */
+  /* The chrome inverts against the page. Jynx is a layer sitting ON your
+     product, not part of it — so on a light document it goes dark, and on a
+     dark one it takes the light palette. It should always read as somebody
+     else's tool resting on top. */
+  .jx-root{
+    --c-bg:#131619; --c-raised:#1C2126; --c-line:#2B3138;
+    --c-jynx:#9B82FF; --c-text:#EDEFF1; --c-dim:#8A9199;
+    --c-green:#3ECF8E; --c-amber:#E0A73E; --c-ink:#12131A;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]) .jx-root{
+      --c-bg:#FBFBFC; --c-raised:#F1F2F4; --c-line:#E0E3E7;
+      --c-jynx:#6B47F5; --c-text:#11151A; --c-dim:#5B6570;
+      --c-green:#0F8A59; --c-amber:#9C6A0B; --c-ink:#fff;
+    }
+  }
+  :root[data-theme="dark"] .jx-root{
+    --c-bg:#FBFBFC; --c-raised:#F1F2F4; --c-line:#E0E3E7;
+    --c-jynx:#6B47F5; --c-text:#11151A; --c-dim:#5B6570;
+    --c-green:#0F8A59; --c-amber:#9C6A0B; --c-ink:#fff;
+  }
+
+  .jx-fab{
+    position:fixed;z-index:9000;right:20px;
+    /* --jx-lift is the measured gap between the layout viewport and what the
+       person can actually see — the browser's own toolbar. Without it the
+       bubble renders behind that bar on every phone. */
+    bottom:calc(20px + env(safe-area-inset-bottom) + var(--jx-lift, 0px));
+    display:flex;align-items:center;gap:9px;
+    background:var(--c-bg);border:1.5px solid var(--c-jynx);
+    border-radius:26px;padding:11px 17px;
+    box-shadow:0 10px 30px rgba(0,0,0,.45);
+    cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+    transition:transform .16s cubic-bezier(.2,.9,.3,1.2),box-shadow .16s ease;
+  }
+  .jx-fab:hover{box-shadow:0 12px 34px rgba(124,92,252,.35)}
+  .jx-fab:active{cursor:grabbing;transform:scale(.95)}
+  .jx-fab.pop{animation:jxpop .4s cubic-bezier(.2,.9,.3,1.3)}
+  @keyframes jxpop{0%,100%{transform:scale(1)}42%{transform:scale(1.14)}}
+  .jx-lock{width:15px;height:15px;stroke:var(--c-jynx);fill:none;stroke-width:2}
+  .jx-face{display:flex;gap:5px;align-items:center}
+  .jx-eye{width:6.5px;height:6.5px;border-radius:50%;background:var(--c-jynx);transition:transform .12s ease,height .08s ease}
+  /* The blink vocabulary. Each is a real thing a face does. */
+  .jx-fab.blink  .jx-eye{height:1.5px;border-radius:1px}
+  .jx-fab.slow   .jx-eye{height:1.5px;border-radius:1px;transition:height .16s ease}
+  .jx-fab.squint .jx-eye{height:3px;border-radius:2px}
+  .jx-fab.wink   .jx-eye:last-child{height:1.5px;border-radius:1px}
+  .jx-fab.think .jx-eye:first-child{animation:jxb .95s ease-in-out infinite}
+  .jx-fab.think .jx-eye:last-child{animation:jxb .95s ease-in-out .17s infinite}
+  @keyframes jxb{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  /* A fly. It shows up rarely, buzzes around the bubble, and Jynx notices —
+     squints at it, tracks it, eventually swats it away. Nothing here is
+     functional. It is the difference between a tool that runs and one somebody
+     made. */
+  .jx-fly{
+    position:absolute;width:7px;height:7px;pointer-events:none;z-index:2;
+    left:50%;top:50%;opacity:0;
+    /* The fly spends most of its flight off the bubble, over the PAGE — so it
+       takes its colour from the page, not from the chrome. Dark body on a light
+       document, pale on a dark one, with a faint halo of the opposite so it
+       still reads while it crosses the bubble itself. */
+    color:#14171A;
+    filter:drop-shadow(0 0 1.5px rgba(255,255,255,.85));
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]) .jx-fly{
+      color:#E7E9EC;
+      filter:drop-shadow(0 0 1.5px rgba(0,0,0,.9));
+    }
+  }
+  :root[data-theme="dark"] .jx-fly{
+    color:#E7E9EC;
+    filter:drop-shadow(0 0 1.5px rgba(0,0,0,.9));
+  }
+  .jx-fly.go{animation:jxfly 7.2s cubic-bezier(.4,.1,.6,.9) forwards}
+  .jx-fly .body{position:absolute;inset:0;width:4px;height:4px;border-radius:50%;
+    background:currentColor;opacity:.85;left:1.5px;top:1.5px}
+  .jx-fly .w{position:absolute;width:4.5px;height:3px;border-radius:50% 50% 40% 40%;
+    background:currentColor;opacity:.32;top:0}
+  .jx-fly .w.l{left:-2px;transform-origin:right center;animation:jxwing .07s linear infinite}
+  .jx-fly .w.r{right:-2px;transform-origin:left center;animation:jxwing .07s linear infinite reverse}
+  @keyframes jxwing{0%{transform:rotate(-22deg) scaleX(.8)}100%{transform:rotate(24deg) scaleX(1)}}
+  @keyframes jxfly{
+    0%   {opacity:0;  transform:translate(46px,-34px) scale(.7)}
+    6%   {opacity:1;  transform:translate(34px,-26px) scale(1)}
+    18%  {transform:translate(-6px,-31px)}
+    27%  {transform:translate(-26px,-8px)}
+    36%  {transform:translate(-11px,7px)}
+    45%  {transform:translate(-30px,-19px)}
+    56%  {transform:translate(2px,-25px)}
+    64%  {transform:translate(-14px,-3px)}
+    73%  {transform:translate(-24px,-22px)}
+    82%  {opacity:1; transform:translate(6px,-16px)}
+    92%  {opacity:.7; transform:translate(44px,-40px) scale(.9)}
+    100% {opacity:0; transform:translate(84px,-72px) scale(.55)}
+  }
+  .jx-fab.annoyed .jx-eye{height:3px;border-radius:2px}
+  .jx-fab.swat{animation:jxswat .42s cubic-bezier(.3,.9,.4,1.2)}
+  @keyframes jxswat{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px) rotate(-2deg)}60%{transform:translateX(3px) rotate(2deg)}}
+  @media (prefers-reduced-motion:reduce){.jx-fly{display:none}}
+
+  .jx-badge{position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;border-radius:10px;padding:0 5px;
+    background:var(--c-green);color:#06140D;font-family:var(--f-mono,monospace);font-size:10px;font-weight:700;
+    display:flex;align-items:center;justify-content:center}
+  .jx-badge[hidden]{display:none!important}
+
+  @keyframes fadeSlideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ---- toolbar ---- */
+  .jx-bar{
+    position:fixed;z-index:9001;display:flex;align-items:center;gap:9px;
+    background:var(--c-bg);border:1px solid var(--c-line);border-radius:16px;
+    padding:9px 11px;box-shadow:0 14px 40px rgba(0,0,0,.5);animation:fadeSlideUp .18s ease;
+  }
+  .jx-bar[hidden]{display:none!important}
+  .jx-t{
+    position:relative;width:42px;height:42px;flex:none;border-radius:12px;
+    background:transparent;border:1px solid transparent;color:var(--c-dim);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:background .14s ease,color .14s ease,transform .1s ease;
+  }
+  .jx-t:hover{background:rgba(155,130,255,.10);color:var(--c-jynx)}
+  .jx-t:active{transform:scale(.92)}
+  .jx-t svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  /* Active is a wash, not a fill. A solid block reads as "this button is on"
+     and shouts; a tint reads as "this is the mode you are in" and doesn't. */
+  .jx-t[aria-pressed="true"]{background:rgba(124,92,252,.13);color:var(--c-jynx);border-color:transparent}
+  .jx-t .hk{
+    position:absolute;top:4px;right:5px;font-family:var(--f-mono,monospace);font-size:8.5px;font-weight:700;
+    color:currentColor;opacity:.4;line-height:1;
+  }
+  .jx-t[aria-pressed="true"] .hk{opacity:.85}
+
+  /* ---- comments panel ---- */
+  .jx-panel{
+    position:fixed;z-index:9001;width:330px;max-width:calc(100vw - 24px);
+    background:var(--c-bg);border:1px solid var(--c-line);border-radius:16px;overflow:hidden;
+    box-shadow:0 16px 46px rgba(0,0,0,.55);font-family:var(--f-body,system-ui),sans-serif;
+    animation:fadeSlideUp .18s ease;
+  }
+  .jx-panel[hidden]{display:none!important}
+  .jx-ph{display:flex;align-items:center;gap:9px;padding:13px 14px;border-bottom:1px solid var(--c-line)}
+  .jx-ph svg{width:17px;height:17px;stroke:var(--c-jynx);fill:none;stroke-width:1.7}
+  .jx-ph .ttl{font-family:var(--f-display,'Space Grotesk'),sans-serif;font-weight:700;font-size:16px;color:var(--c-jynx);letter-spacing:.01em}
+  .jx-ph .x{margin-left:auto;background:none;border:none;color:var(--c-dim);font-size:19px;line-height:1;cursor:pointer;padding:0 3px}
+  .jx-cta{margin:12px 14px;border:1px dashed var(--c-amber);border-radius:10px;padding:10px;text-align:center;
+    color:var(--c-amber);font-family:var(--f-body,system-ui),sans-serif;font-weight:700;font-size:13px}
+  .jx-filters{display:flex;gap:7px;flex-wrap:wrap;padding:0 14px 12px}
+  .jx-f{background:transparent;border:1px solid var(--c-line);color:var(--c-dim);border-radius:9px;
+    padding:7px 14px;cursor:pointer;font-family:var(--f-body,system-ui),sans-serif;font-weight:700;font-size:12.5px;
+    transition:background .14s ease,color .14s ease,border-color .14s ease}
+  .jx-f:hover{color:var(--c-text)}
+  .jx-f[aria-pressed="true"]{background:var(--c-green);border-color:var(--c-green);color:#06140D}
+  .jx-list{padding:0 14px 12px;max-height:38vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .jx-hint{font-size:12.5px;line-height:1.5;color:var(--c-dim);margin:0 0 11px}
+  .jx-warn{font-family:var(--f-mono,monospace);font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--c-amber);border:1px solid var(--c-amber);border-radius:3px;padding:2px 7px;display:inline-block;margin:0 0 11px}
+  .jx-warn[hidden]{display:none!important}
+
+  .jx-note{border:1px solid var(--c-line);border-radius:11px;padding:11px 12px;margin-bottom:9px;background:var(--c-raised);cursor:pointer;transition:border-color .14s ease}
+  .jx-note:hover{border-color:var(--c-jynx)}
+  .jx-note .tagrow{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap}
+  .jx-note .chip{font-family:var(--f-mono,monospace);font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    background:rgba(155,130,255,.18);color:var(--c-jynx);border-radius:4px;padding:3px 8px}
+  .jx-note .path{font-family:var(--f-mono,monospace);font-size:10.5px;color:var(--c-jynx);opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+  .jx-note .t{font-size:13.5px;line-height:1.5;color:var(--c-text)}
+  .jx-note .lk{display:inline-block;margin-top:7px;font-family:var(--f-mono,monospace);font-size:9.5px;font-weight:700;
+    background:rgba(255,255,255,.07);color:var(--c-dim);border:1px solid var(--c-line);border-radius:4px;padding:2px 7px}
+  .jx-note .meta{display:flex;align-items:center;gap:9px;margin-top:9px;padding-top:9px;border-top:1px solid var(--c-line)}
+  .jx-note .meta .when{font-family:var(--f-mono,monospace);font-size:10px;color:var(--c-dim)}
+  .jx-note .meta .act{margin-left:auto;display:flex;gap:6px}
+  .jx-note .meta .act button{width:26px;height:26px;border-radius:7px;border:1px solid var(--c-line);background:transparent;
+    color:var(--c-dim);cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
+  .jx-note .meta .act button:hover{color:var(--c-text);border-color:var(--c-jynx)}
+
+  .jx-foot{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--c-line)}
+  .jx-btn{flex:1;background:transparent;border:1px solid var(--c-line);color:var(--c-dim);border-radius:10px;
+    padding:10px;cursor:pointer;font-family:var(--f-body,system-ui),sans-serif;font-weight:700;font-size:12.5px;transition:border-color .14s ease,color .14s ease}
+  .jx-btn:hover{color:var(--c-text);border-color:var(--c-jynx)}
+
+  /* ---- compose ---- */
+  /* Never a modal. Jynx is a layer on the mission, not a replacement for it —
+     a backdrop that dims the page makes the tool the thing you are looking at,
+     which is the exact failure this product exists to avoid. Small, anchored to
+     what you picked, page still visible and still scrollable behind it. */
+  /* overflow stays visible so the thought bubble can sit above the card; the
+     children round their own outer corners instead. */
+  .jx-ask{position:absolute;z-index:9003;width:286px;max-width:calc(100vw - 24px);
+    background:var(--c-bg);border:1px solid var(--c-jynx);border-radius:13px;
+    box-shadow:0 14px 38px rgba(0,0,0,.32);animation:fadeSlideUp .15s ease}
+  /* Jynx thinking out loud above the note you are writing. */
+  .jx-dream{
+    position:absolute;left:10px;right:10px;bottom:calc(100% + 14px);
+    background:var(--c-jynx);color:var(--c-ink);border-radius:12px;padding:9px 13px;
+    font-family:var(--f-body,system-ui),sans-serif;font-weight:600;font-size:12px;line-height:1.45;
+    box-shadow:0 10px 26px rgba(0,0,0,.34);pointer-events:none;
+    animation:jxsay .3s cubic-bezier(.2,.9,.3,1.25);
+  }
+  .jx-dream[hidden]{display:none!important}
+  .jx-dream::after{content:"";position:absolute;bottom:-5px;left:26px;width:10px;height:10px;
+    background:var(--c-jynx);transform:rotate(45deg)}
+  .jx-dream i{position:absolute;bottom:-14px;left:15px;width:5px;height:5px;border-radius:50%;
+    background:var(--c-jynx);opacity:.55}
+
+  .jx-ask .hd{border-radius:12px 12px 0 0}
+  .jx-ask .ft{border-radius:0 0 12px 12px}
+  .jx-ask[hidden]{display:none!important}
+  .jx-ask .hd{display:flex;align-items:center;gap:7px;padding:10px 12px;border-bottom:1px solid var(--c-line)}
+  .jx-ask .hd .k{font-family:var(--f-mono,monospace);font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+    background:rgba(155,130,255,.18);color:var(--c-jynx);border-radius:4px;padding:3px 7px;flex:none}
+  .jx-ask .hd .v{font-size:12px;color:var(--c-dim);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .jx-ask textarea{width:100%;border:none;outline:none;resize:none;padding:11px 12px;min-height:62px;
+    font:400 14px/1.5 var(--f-body,system-ui),sans-serif;background:transparent;color:var(--c-text);display:block}
+  .jx-ask textarea::placeholder{color:var(--c-dim)}
+  .jx-links{padding:0 12px 10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .jx-link-btn{background:transparent;border:1px dashed var(--c-line);color:var(--c-dim);border-radius:8px;
+    padding:5px 9px;cursor:pointer;font-family:var(--f-mono,monospace);font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+  .jx-link-btn:hover{border-color:var(--c-jynx);color:var(--c-jynx)}
+  .jx-chipx{display:inline-flex;align-items:center;gap:5px;font-family:var(--f-mono,monospace);font-size:9.5px;font-weight:700;
+    background:rgba(155,130,255,.18);color:var(--c-jynx);border-radius:4px;padding:3px 4px 3px 8px}
+  .jx-chipx button{border:none;background:none;color:inherit;cursor:pointer;font-size:12px;line-height:1;padding:0 3px;opacity:.7}
+  .jx-chipx button:hover{opacity:1}
+  .jx-ask .ft{display:flex;gap:7px;padding:9px 12px;border-top:1px solid var(--c-line)}
+  .jx-ask .ft button{flex:1;border-radius:8px;padding:8px;cursor:pointer;font-family:var(--f-body,system-ui),sans-serif;font-weight:700;font-size:12.5px;
+    background:transparent;border:1px solid var(--c-line);color:var(--c-dim)}
+  .jx-ask .ft button:hover{color:var(--c-text)}
+  .jx-ask .ft .go{background:var(--c-jynx);border-color:var(--c-jynx);color:var(--c-ink)}
+
+  .jx-escape{
+    position:fixed;top:0;left:0;right:0;z-index:9100;border:none;width:100%;
+    background:var(--c-jynx);color:var(--c-ink);cursor:pointer;
+    font-family:var(--f-body,system-ui),sans-serif;font-weight:700;font-size:13.5px;
+    padding:11px 14px;padding-top:calc(11px + env(safe-area-inset-top));
+    box-shadow:0 2px 12px rgba(0,0,0,.25);transition:opacity .5s ease;
+  }
+  .jx-escape.go{opacity:0;pointer-events:none}
+  .jx-hello{position:fixed;z-index:8999;background:var(--c-jynx);color:#12131A;
+    font-family:var(--f-display,'Space Grotesk'),sans-serif;font-weight:700;font-size:12.5px;
+    padding:8px 13px;border-radius:10px;box-shadow:0 8px 22px rgba(0,0,0,.4);pointer-events:none;animation:fadeSlideUp .3s ease}
+  .jx-hello[hidden]{display:none!important}
+  .jx-hello.go{opacity:0;transition:opacity .45s ease}
+  .jx-hello-tail{position:absolute;bottom:-5px;right:22px;width:10px;height:10px;background:var(--c-jynx);transform:rotate(45deg)}
+
+  /* ---- on the page ---- */
+  .jx-hl{outline:2px solid #7C5CFC!important;outline-offset:2px;background:rgba(124,92,252,.08)!important}
+  .jx-marked{outline:1px solid rgba(124,92,252,.5)!important;outline-offset:2px}
+  /* Eye off: the page is just the page. Nothing is lost, only hidden. */
+  body.jx-hidden .jx-pin,
+  body.jx-hidden .jx-pop,
+  body.jx-hidden #jx-svg,
+  body.jx-hidden .jx-tag{display:none!important}
+  body.jx-hidden .jx-marked{outline:none!important}
+  .jx-linking{outline:2px dashed #3ECF8E!important;outline-offset:2px;background:rgba(62,207,142,.10)!important}
+  .jx-tag{position:absolute;z-index:8999;font-family:var(--f-mono,monospace);font-size:9.5px;font-weight:700;letter-spacing:.04em;
+    color:#fff;background:#7C5CFC;border-radius:4px;padding:2px 7px;pointer-events:none;white-space:nowrap}
+  .jx-pin{position:absolute;z-index:8998;min-width:23px;height:23px;border-radius:7px;padding:0 6px;
+    background:#7C5CFC;color:#fff;font-family:var(--f-mono,monospace);font-size:10px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;border:1.5px solid rgba(255,255,255,.85);
+    box-shadow:0 3px 10px rgba(0,0,0,.35);animation:fadeSlideUp .26s ease;transition:transform .14s ease}
+  .jx-pin:hover{transform:scale(1.12)}
+  .jx-pin.many{background:var(--c-jynx);border-color:rgba(255,255,255,.9)}
+
+  /* Hovering any reference to an element, anywhere in Jynx, lights the real
+     thing up. Confirmation without having to guess. */
+  .jx-peek{outline:2px solid #7C5CFC!important;outline-offset:3px;border-radius:3px;
+    background:rgba(124,92,252,.09)!important;animation:jxpeek 1.1s ease-in-out infinite}
+  @keyframes jxpeek{0%,100%{outline-color:rgba(124,92,252,.95)}50%{outline-color:rgba(124,92,252,.4)}}
+  .jx-ref{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
+  .jx-ref:hover{color:var(--c-jynx)}
+
+  .jx-popitem{border-top:1px solid var(--c-line);margin-top:9px;padding-top:9px;animation:fadeSlideUp .26s ease both}
+  .jx-popitem:first-of-type{border-top:none;margin-top:6px;padding-top:0}
+  .jx-note{animation:fadeSlideUp .28s ease both}
+  .jx-pop{position:absolute;z-index:9002;width:252px;max-width:calc(100vw - 28px);
+    background:var(--c-bg);border:1px solid var(--c-jynx);border-radius:12px;padding:12px 13px;
+    box-shadow:0 14px 36px rgba(0,0,0,.5);font-family:var(--f-body,system-ui),sans-serif;animation:fadeSlideUp .16s ease}
+  .jx-pop .w{font-family:var(--f-mono,monospace);font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--c-jynx);display:block;margin-bottom:6px}
+  .jx-pop .t{font-size:13.5px;line-height:1.5;color:var(--c-text)}
+  .jx-pop .row{display:flex;gap:7px;margin-top:11px}
+  .jx-pop .row button{flex:1;border-radius:9px;padding:8px;cursor:pointer;font-family:var(--f-body,system-ui),sans-serif;font-weight:700;font-size:12px;
+    background:transparent;border:1px solid var(--c-line);color:var(--c-dim)}
+  .jx-pop .row button:hover{color:var(--c-text);border-color:var(--c-jynx)}
+  .jx-selchip{
+    position:absolute;z-index:9002;background:var(--c-jynx);color:var(--c-ink);border:none;
+    font-family:var(--f-body,system-ui),sans-serif;font-weight:700;font-size:13px;
+    padding:9px 15px;border-radius:11px;box-shadow:0 8px 22px rgba(0,0,0,.35);cursor:pointer;
+    animation:fadeSlideUp .16s ease;
+  }
+  .jx-marq{position:absolute;z-index:8998;border:1px dashed #7C5CFC;background:rgba(124,92,252,.12)}
+  #jx-svg{position:absolute;top:0;left:0;z-index:8997;pointer-events:none;overflow:visible}
+  #jx-svg .shape{pointer-events:auto;cursor:pointer;transition:fill-opacity .15s ease}
+  #jx-svg .shape:hover{fill-opacity:.3}
+  body.jx-draw{cursor:crosshair}
+  body.jx-area,body.jx-point,body.jx-link{cursor:crosshair}
+  body.jx-area,body.jx-draw{touch-action:none;overscroll-behavior:none}
+
+  @media (max-width:640px){
+    .jx-bar{left:8px!important;right:8px;width:auto;justify-content:space-between;gap:6px;padding:9px;border-radius:18px}
+    .jx-t{width:46px;height:46px}
+    .jx-panel{left:0!important;right:0;top:auto!important;bottom:0;width:100%;max-width:none;border-radius:18px 18px 0 0;
+      border-left:none;border-right:none;border-bottom:none;padding-bottom:env(safe-area-inset-bottom)}
+    .jx-list{max-height:32vh}
+    .jx-ask{width:calc(100vw - 20px)}
+    .jx-ask textarea{font-size:16px}
+    .jx-t .hk{display:none}
+  }
+  @media print{.jx-fab,.jx-bar,.jx-panel,.jx-pin,.jx-pop,.jx-marq,#jx-canvas,.jx-ask,.jx-hello{display:none!important}}
+  @media (prefers-reduced-motion:reduce){.jx-fab,.jx-bar,.jx-panel,.jx-pin,.jx-pop,.jx-ask{animation:none!important;transition:none!important}}
+</style>
+
+<div class="jx-root">
+  <div class="jx-fab" id="jx-fab" role="button" tabindex="0" aria-label="Open Jynx">
+    <svg class="jx-lock" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    <span class="jx-face"><span class="jx-eye"></span><span class="jx-eye"></span></span>
+    <span class="jx-fly" id="jx-fly" aria-hidden="true"><i class="w l"></i><i class="w r"></i><i class="body"></i></span>
+  <span class="jx-badge" id="jx-badge" hidden>0</span>
+  </div>
+
+  <div class="jx-hello" id="jx-hello" hidden>Try me<span class="jx-hello-tail"></span></div>
+
+  <div class="jx-bar" id="jx-bar" hidden>
+    <button class="jx-t" data-mode="point" aria-pressed="true" title="Point — pick an element (1)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg><span class="hk">1</span></button>
+    <button class="jx-t" data-mode="area" aria-pressed="false" title="Area — box in several (2)">
+      <svg viewBox="0 0 24 24"><path d="M5 3a2 2 0 0 0-2 2M9 3h1M14 3h1M19 3a2 2 0 0 1 2 2M21 9v1M21 14v1M21 19a2 2 0 0 1-2 2M15 21h-1M10 21H9M5 21a2 2 0 0 1-2-2M3 15v-1M3 10V9"/></svg><span class="hk">2</span></button>
+    <button class="jx-t" data-mode="draw" aria-pressed="false" title="Draw — close a shape to comment on it (3)">
+      <svg viewBox="0 0 24 24"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/><path d="m15 5 4 4"/></svg><span class="hk">3</span></button>
+    <button class="jx-t" id="jx-eye" aria-pressed="true" title="Show or hide Jynx (4)">
+      <svg viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg><span class="hk">4</span></button>
+    <button class="jx-t" id="jx-show" aria-pressed="false" title="Comments (5)">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="hk">5</span></button>
+    <button class="jx-t" id="jx-bar-close" title="Close (Esc)">
+      <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div>
+
+  <div class="jx-panel" id="jx-panel" hidden>
+    <div class="jx-ph">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="ttl">Comments</span>
+      <button class="x" id="jx-panel-close" aria-label="Close">⌄</button>
+    </div>
+    <div class="jx-cta" id="jx-cta">Feedback about Jynx</div>
+    <div class="jx-filters">
+      <button class="jx-f" id="jx-f-open" aria-pressed="true">Open</button>
+      <button class="jx-f" id="jx-f-done" aria-pressed="false">Done</button>
+      <button class="jx-f" id="jx-f-all" aria-pressed="true">This page</button>
+    </div>
+    <div class="jx-list">
+      <p class="jx-warn" id="jx-warn" hidden></p>
+      <p class="jx-hint" id="jx-hint"></p>
+      <div id="jx-notes"></div>
+    </div>
+    <div class="jx-foot">
+      <button class="jx-btn" id="jx-copy">Copy notes</button>
+      <button class="jx-btn" id="jx-clear">Clear</button>
+    </div>
+  </div>
+
+  <div class="jx-ask" id="jx-ask" hidden>
+    <div class="hd"><span class="k" id="jx-ask-k">Note</span><span class="v" id="jx-ask-v"></span></div>
+    <textarea id="jx-ask-t" rows="2" placeholder="What should be different?"></textarea>
+    <div class="jx-links">
+      <button class="jx-link-btn" id="jx-link">+ link</button>
+      <span id="jx-link-list" style="display:contents"></span>
+    </div>
+    <div class="jx-dream" id="jx-dream" hidden><i></i><span id="jx-dream-t"></span></div>
+    <div class="ft"><button id="jx-cancel">Cancel</button><button class="go" id="jx-save">Send</button></div>
+  </div>
+</div>
+<script>
+/* ==================================================================
+   Jynx — the local demo carried by every document.
+
+   A scale model, not a mock: the gestures are the real ones. Point at a
+   thing, drag a box around several, draw on it, link one element to
+   another, keep the notes. Everything stays in the reader's browser.
+
+   Built to the product's own chrome — dark surface over whatever page it
+   sits on, violet outline, rounded squares with hotkey badges, a grip to
+   drag by. Pointer events throughout, because most people open this from
+   a message on a phone.
+   ================================================================== */
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var fab = $("jx-fab"), bar = $("jx-bar"), panel = $("jx-panel"), ask = $("jx-ask");
+  if (!fab || !bar || !panel || !ask) return;
+
+  var hint = $("jx-hint"), warn = $("jx-warn"), list = $("jx-notes"), badge = $("jx-badge");
+  var askK = $("jx-ask-k"), askV = $("jx-ask-v"), askT = $("jx-ask-t");
+  var linkBtn = $("jx-link"), linkList = $("jx-link-list");
+  var root = document.querySelector(".wrap") || document.body;
+
+  var KEY = "jynx-demo-v3", POS = "jynx-fab-pos";
+  var SEL = "h1,h2,h3,h4,p,li,td,th,.pull,.figure,.nn,.loop > div,.layer,.yr,.rk,.grow div,.try,.ask";
+  var HINTS = {
+    point: "Point at anything and say what is wrong with it. Link a second element if the problem is between two things.",
+    area:  "Box in several things at once — part of a diagram, a whole section.",
+    draw:  "Draw on it. Close the shape and it becomes something you can comment on."
+  };
+  var TOUCH_HINTS = {
+    point: "Press and hold anything to comment on it. Or select some text — Jynx takes it from there.",
+    area:  "Drag a box around several things at once.",
+    draw:  "Draw with your finger. Close the shape and it becomes something you can comment on."
+  };
+  /* Three lines, and it only speaks when you have just done something.
+     Talking on open, on every mode switch and on every hover made the tool the
+     thing you were looking at — the exact failure this product argues against.
+     A line after an action is a reaction. A line before one is an interruption. */
+  var SAYS = [
+    "Imagine there was someone to do something about it ;)",
+    "If that was just a comment — action…",
+    "Let's jynx it :))"
+  ];
+  var sayN = 0;
+  function nextLine() { return SAYS[sayN++ % SAYS.length]; }
+
+  var sayTimer = null;
+  function say(text, ms) {
+    var el = $("jx-hello"); if (!el) return;
+    clearTimeout(sayTimer);
+    el.classList.remove("go");
+    el.innerHTML = "";
+    el.appendChild(document.createTextNode(text));
+    var tail = document.createElement("span"); tail.className = "jx-hello-tail";
+    el.appendChild(tail);
+    el.hidden = false;
+    /* Sit above whatever chrome is topmost right now — the panel, then the
+       toolbar, then the bubble — and share its right edge so the two read as
+       one stack. Anchoring to the bubble alone put the speech underneath the
+       open toolbar, which is where Rio caught it. */
+    var box = fab.getBoundingClientRect();
+    [panel, bar].forEach(function (c) {
+      if (c.hidden) return;
+      var r = c.getBoundingClientRect();
+      if (r.height && r.top < box.top) box = r;
+    });
+    var w = el.getBoundingClientRect();
+    el.style.left = Math.max(8, Math.min(box.right - w.width, window.innerWidth - w.width - 8)) + "px";
+    el.style.top = Math.max(8, box.top - w.height - 10) + "px";
+    sayTimer = setTimeout(function () {
+      el.classList.add("go");
+      setTimeout(function () { el.hidden = true; }, 520);
+    }, ms || 2600);
+  }
+
+  var TOUCH = (function () {
+    try { return window.matchMedia("(hover: none), (pointer: coarse)").matches; }
+    catch (e) { return "ontouchstart" in window; }
+  })();
+
+  var open = false, sheet = false, mode = "point", notes = [], visible = true;
+
+  /* ---- position:fixed is not reliable where this actually gets opened ----
+
+     Several in-app viewers (a messaging app's document preview, iOS Quick Look,
+     some embedded webviews) treat position:fixed as position:absolute. The
+     symptom is exact and Rio saw it: the bubble sits at the BOTTOM OF THE
+     DOCUMENT instead of the corner of the screen, and scrolls away.
+
+     Rather than guess at the environment, watch for the symptom and repair it:
+     if the bubble ever leaves the viewport while the page scrolls, switch the
+     whole chrome to absolute positioning and place it by hand on every scroll.
+     Costs nothing where fixed works, and rescues it where it doesn't. */
+  /* ---- the actual reason the bubble hides on a phone ----
+
+     On a phone window.innerHeight is the LAYOUT viewport, which includes the
+     strip behind the browser's own toolbar. visualViewport.height is what the
+     person can actually see. Measured on a 390x844 device: innerHeight 1046,
+     visualViewport 844 — so `position:fixed; bottom:20px` puts the bubble 143px
+     BELOW the visible area, tucked behind the share bar. Exactly the screenshot.
+
+     So the offset is measured, not assumed, and re-measured whenever the
+     browser chrome slides in or out. */
+  function chromeInset() {
+    var vv = window.visualViewport;
+    if (!vv) return 0;
+    return Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+  }
+  function liftChrome() {
+    var lift = chromeInset();
+    document.documentElement.style.setProperty("--jx-lift", lift + "px");
+    if (pinned) repin();
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", liftChrome);
+    window.visualViewport.addEventListener("scroll", liftChrome);
+  }
+
+  var pinned = false;
+  var CHROME = function () { return [fab, bar, panel]; };
+
+  function goManual() {
+    if (pinned) return;
+    pinned = true;
+    CHROME().forEach(function (el) { el.style.position = "absolute"; });
+    repin();
+  }
+  function repin() {
+    if (!pinned) return;
+    var vv = window.visualViewport;
+    var vw = vv ? vv.width : window.innerWidth;
+    var vh = vv ? vv.height : window.innerHeight;
+    var fr = fab.getBoundingClientRect();
+    var right = parseFloat(fab.style.right) || 20, bottom = parseFloat(fab.style.bottom) || 20;
+    fab.style.left = (scrollX + vw - fr.width - right) + "px";
+    fab.style.top = (scrollY + vh - fr.height - bottom) + "px";
+    fab.style.right = "auto"; fab.style.bottom = "auto";
+    var hello = $("jx-hello");
+    if (hello && !hello.hidden) {
+      var hr = hello.getBoundingClientRect();
+      hello.style.left = (scrollX + vw - hr.width - right) + "px";
+      hello.style.top = (parseFloat(fab.style.top) - hr.height - 10) + "px";
+    }
+    place();
+  }
+  var tag = null, pop = null, pending = null, linking = false;
+  var marq = null, aStart = null;
+
+  /* Opened as an attachment this runs on file://, where some browsers refuse
+     localStorage outright. Fall back to memory and say so, rather than losing
+     somebody's notes quietly. */
+  var mem = {}, durable = true;
+  try { localStorage.setItem("jynx-probe", "1"); localStorage.removeItem("jynx-probe"); }
+  catch (e) { durable = false; }
+  function ls(k, v) {
+    if (!durable) { if (v === undefined) return mem[k] || null; mem[k] = v; return; }
+    try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); }
+    catch (e) { durable = false; mem[k] = v; }
+  }
+  function save() { ls(KEY, JSON.stringify(notes)); bump(); }
+
+  /* ---- addressing an element so a note survives a reload ---- */
+  function pathOf(el) {
+    var parts = [];
+    while (el && el !== document.body && parts.length < 12) {
+      var p = el.parentNode; if (!p) break;
+      var i = 0, n = p.firstElementChild;
+      while (n && n !== el) { if (n.tagName === el.tagName) i++; n = n.nextElementSibling; }
+      parts.unshift(el.tagName.toLowerCase() + ":" + i);
+      el = p;
+    }
+    return parts.join(">");
+  }
+  function fromPath(path) {
+    if (!path) return null;
+    var el = document.body, parts = path.split(">");
+    for (var k = 0; k < parts.length; k++) {
+      var b = parts[k].split(":"), want = b[0], idx = +b[1], i = 0, n = el.firstElementChild, hit = null;
+      while (n) { if (n.tagName.toLowerCase() === want) { if (i === idx) { hit = n; break; } i++; } n = n.nextElementSibling; }
+      if (!hit) return null;
+      el = hit;
+    }
+    return el;
+  }
+  function label(el) {
+    var t = (el.textContent || "").trim().replace(/\s+/g, " ");
+    return t ? t.slice(0, 40) : el.tagName.toLowerCase();
+  }
+  function kindOf(el) {
+    var t = el.tagName.toLowerCase();
+    if (/^h[1-4]$/.test(t)) return "HEADING";
+    if (t === "td" || t === "th") return "TABLE";
+    if (t === "li") return "LIST";
+    if (el.classList.contains("nn") || el.classList.contains("figure")) return "FIGURE";
+    if (el.classList.contains("pull")) return "QUOTE";
+    return "TEXT";
+  }
+
+  function bump() {
+    if (!badge) return;
+    badge.textContent = String(notes.length);
+    badge.hidden = notes.length === 0;
+    fab.classList.remove("pop"); void fab.offsetWidth;
+    if (notes.length) fab.classList.add("pop");
+  }
+
+  /* ---- the face ----
+
+     One blink on a timer reads as a blinking cursor. People blink in bursts,
+     sometimes twice, sometimes barely, and slower when they are tired — so the
+     face has moods and picks between them. It is the cheapest possible signal
+     that something is paying attention rather than merely running. */
+  (function () {
+    var MOODS = [
+      { cls: "blink",  hold: 120, gap: [1800, 3600] },   // ordinary
+      { cls: "blink",  hold: 110, gap: [140, 190], twice: true },  // a quick double
+      { cls: "slow",   hold: 320, gap: [4000, 7000] },   // a long, tired one
+      { cls: "squint", hold: 260, gap: [3000, 6000] },   // half-lidded
+      { cls: "wink",   hold: 200, gap: [5000, 9000] }    // one eye only
+    ];
+    function pick() {
+      var r = Math.random();
+      if (r < .52) return MOODS[0];
+      if (r < .72) return MOODS[1];
+      if (r < .86) return MOODS[2];
+      if (r < .95) return MOODS[3];
+      return MOODS[4];
+    }
+    function run() {
+      var m = pick();
+      fab.classList.add(m.cls);
+      setTimeout(function () {
+        fab.classList.remove(m.cls);
+        if (m.twice) {
+          setTimeout(function () {
+            fab.classList.add(m.cls);
+            setTimeout(function () { fab.classList.remove(m.cls); }, m.hold);
+          }, 130);
+        }
+      }, m.hold);
+      setTimeout(run, m.gap[0] + Math.random() * (m.gap[1] - m.gap[0]));
+    }
+    setTimeout(run, 900);
+
+    /* Every minute or two, a fly. Jynx squints at it, follows it round, and
+       eventually swats. Rare enough to be a surprise the second time. */
+    var fly = $("jx-fly");
+    function visit() {
+      if (!fly || document.hidden) { setTimeout(visit, 20000); return; }
+      fly.classList.remove("go"); void fly.offsetWidth;
+      fly.classList.add("go");
+      fab.classList.add("annoyed");
+      // the eyes track it while it is out
+      var t0 = Date.now(), track = setInterval(function () {
+        var m = getComputedStyle(fly).transform;
+        var p = m && m !== "none" ? m.match(/matrix\(([^)]+)\)/) : null;
+        if (p) {
+          var v = p[1].split(",");
+          var fx = parseFloat(v[4]), fy = parseFloat(v[5]);
+          var d = Math.hypot(fx, fy) || 1, k = 1.7;
+          var eyes = fab.querySelectorAll(".jx-eye");
+          for (var i = 0; i < eyes.length; i++) {
+            eyes[i].style.transform = "translate(" + (fx / d * k).toFixed(2) + "px," + (fy / d * k).toFixed(2) + "px)";
+          }
+        }
+        if (Date.now() - t0 > 6600) clearInterval(track);
+      }, 60);
+      setTimeout(function () {
+        fab.classList.add("swat");
+        setTimeout(function () { fab.classList.remove("swat"); }, 430);
+      }, 5900);
+      setTimeout(function () {
+        fab.classList.remove("annoyed");
+        var eyes = fab.querySelectorAll(".jx-eye");
+        for (var i = 0; i < eyes.length; i++) eyes[i].style.transform = "";
+      }, 7300);
+      setTimeout(visit, 20000 + Math.random() * 6000);
+    }
+    setTimeout(visit, 12000 + Math.random() * 6000);
+
+    window.addEventListener("pointermove", function (e) {
+      if (e.pointerType === "touch") return;
+      var r = fab.getBoundingClientRect();
+      var dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+      var d = Math.hypot(dx, dy) || 1, s = 1.6;
+      var eyes = fab.querySelectorAll(".jx-eye");
+      for (var i = 0; i < eyes.length; i++) {
+        eyes[i].style.transform = "translate(" + (dx / d * s).toFixed(2) + "px," + (dy / d * s).toFixed(2) + "px)";
+      }
+    }, { passive: true });
+  })();
+
+  /* ---- dragging, clamped so nothing can leave the viewport ---- */
+  function draggable(el, handle, storeKey) {
+    var down = null, moved = false, prevSelect = "";
+
+    function put(right, bottom) {
+      var r = el.getBoundingClientRect();
+      right = Math.min(Math.max(4, right), Math.max(4, window.innerWidth - r.width - 4));
+      bottom = Math.min(Math.max(4, bottom), Math.max(4, window.innerHeight - r.height - 4));
+      el.style.right = right + "px"; el.style.bottom = bottom + "px";
+      el.style.left = "auto"; el.style.top = "auto";
+      if (pinned && el === fab) repin();
+    }
+    if (storeKey) {
+      try { var p = JSON.parse(ls(storeKey) || "null"); if (p) put(p.right, p.bottom); } catch (e) {}
+    }
+
+    function begin(x, y, ev) {
+      var r = el.getBoundingClientRect();
+      down = { x: x, y: y, right: window.innerWidth - r.right, bottom: window.innerHeight - r.bottom };
+      moved = false;
+      /* A drag across the page starts a text selection in some embedded
+         webviews, and the selection then swallows the pointer stream — the
+         bubble sticks after a few pixels. Kill selection for the duration. */
+      prevSelect = document.body.style.userSelect;
+      document.body.style.userSelect = "none";
+      document.body.style.webkitUserSelect = "none";
+      if (ev && ev.pointerId !== undefined) {
+        try { handle.setPointerCapture(ev.pointerId); } catch (e) {}
+      }
+      if (ev && ev.cancelable) ev.preventDefault();
+    }
+    function move(x, y, ev) {
+      if (!down) return;
+      var dx = x - down.x, dy = y - down.y;
+      if (!moved && Math.hypot(dx, dy) < 5) return;
+      moved = true;
+      put(down.right - dx, down.bottom - dy);
+      place();
+      if (ev && ev.cancelable) ev.preventDefault();
+    }
+    function end() {
+      if (!down) return;
+      document.body.style.userSelect = prevSelect;
+      document.body.style.webkitUserSelect = prevSelect;
+      if (storeKey) {
+        var r = el.getBoundingClientRect();
+        ls(storeKey, JSON.stringify({ right: window.innerWidth - r.right, bottom: window.innerHeight - r.bottom }));
+      }
+      var wasDrag = moved;
+      down = null; moved = false;
+      if (!wasDrag && el === fab) toggle();
+    }
+
+    /* Pointer events where they exist, mouse and touch where they do not — some
+       embedded viewers still ship an engine without PointerEvent, and there the
+       bubble simply never moved. Both paths are guarded by the same `down`
+       flag, so a browser firing both never double-handles a drag. */
+    if (window.PointerEvent) {
+      handle.addEventListener("pointerdown", function (e) { if (e.button === 2) return; begin(e.clientX, e.clientY, e); });
+      window.addEventListener("pointermove", function (e) { move(e.clientX, e.clientY, e); }, { passive: false });
+      window.addEventListener("pointerup", end);
+      window.addEventListener("pointercancel", end);
+      handle.addEventListener("lostpointercapture", function () { if (down && !moved) end(); });
+    } else {
+      handle.addEventListener("mousedown", function (e) { if (e.button === 2) return; begin(e.clientX, e.clientY, e); });
+      window.addEventListener("mousemove", function (e) { move(e.clientX, e.clientY, e); });
+      window.addEventListener("mouseup", end);
+      handle.addEventListener("touchstart", function (e) {
+        var t = e.touches[0]; if (t) begin(t.clientX, t.clientY, e);
+      }, { passive: false });
+      window.addEventListener("touchmove", function (e) {
+        var t = e.touches[0]; if (t) move(t.clientX, t.clientY, e);
+      }, { passive: false });
+      window.addEventListener("touchend", end);
+    }
+  }
+
+  draggable(fab, fab, POS);
+
+  fab.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+  });
+  /* The bubble may be a real <a> so that a viewer with no JavaScript still has
+     somewhere to send the reader. Here, scripts obviously run — so the link is
+     never followed. */
+  fab.addEventListener("click", function (e) { e.preventDefault(); });
+
+  /* Toolbar above the bubble, panel above that — both clamped. */
+  function place() {
+    var r = fab.getBoundingClientRect();
+    if (pinned) {
+      // Everything is absolute now, so positions are page coordinates.
+      if (!bar.hidden) {
+        var b = bar.getBoundingClientRect();
+        bar.style.left = Math.max(scrollX + 8, Math.min(r.right + scrollX - b.width, scrollX + window.innerWidth - b.width - 8)) + "px";
+        bar.style.top = Math.max(scrollY + 8, r.top + scrollY - b.height - 12) + "px";
+        bar.style.right = "auto"; bar.style.bottom = "auto";
+      }
+      if (!panel.hidden) {
+        var q = panel.getBoundingClientRect(), bh = bar.hidden ? 0 : bar.getBoundingClientRect().height + 12;
+        panel.style.left = Math.max(scrollX + 8, Math.min(r.right + scrollX - q.width, scrollX + window.innerWidth - q.width - 8)) + "px";
+        panel.style.top = Math.max(scrollY + 8, r.top + scrollY - bh - q.height - 12) + "px";
+        panel.style.right = "auto"; panel.style.bottom = "auto";
+      }
+      return;
+    }
+    if (!bar.hidden && window.innerWidth > 640) {
+      var b = bar.getBoundingClientRect();
+      bar.style.left = Math.min(Math.max(8, r.right - b.width), window.innerWidth - b.width - 8) + "px";
+      bar.style.top = Math.max(8, r.top - b.height - 12) + "px";
+      bar.style.right = "auto"; bar.style.bottom = "auto";
+    }
+    if (!panel.hidden && window.innerWidth > 640) {
+      var q = panel.getBoundingClientRect(), bh = bar.hidden ? 0 : bar.getBoundingClientRect().height + 12;
+      panel.style.left = Math.min(Math.max(8, r.right - q.width), window.innerWidth - q.width - 8) + "px";
+      panel.style.top = Math.max(8, r.top - bh - q.height - 12) + "px";
+      panel.style.right = "auto"; panel.style.bottom = "auto";
+    }
+  }
+
+  /* ---- notes ---- */
+  function render() {
+    list.innerHTML = "";
+    if (!notes.length) {
+      var e = document.createElement("p");
+      e.className = "jx-hint"; e.style.opacity = ".7";
+      e.textContent = TOUCH ? "Nothing yet. Press and hold anything on the page." : "Nothing yet. Point at something and say what is wrong with it.";
+      list.appendChild(e); return;
+    }
+    notes.forEach(function (n, i) {
+      var d = document.createElement("div"); d.className = "jx-note";
+      d.style.animationDelay = (i * 45) + "ms";
+      var row = document.createElement("div"); row.className = "tagrow";
+      var chip = document.createElement("span"); chip.className = "chip"; chip.textContent = n.kind || "TEXT";
+      var path = handle(document.createElement("span"), n.path);
+      path.className += " path"; path.textContent = n.on;
+      row.appendChild(chip); row.appendChild(path);
+      var t = document.createElement("div"); t.className = "t"; t.textContent = n.text;
+      d.appendChild(row); d.appendChild(t);
+      (n.links || []).forEach(function (l) {
+        var c = handle(document.createElement("span"), l.path);
+        c.className += " lk"; c.textContent = "↳ " + l.on.slice(0, 24);
+        d.appendChild(c);
+      });
+      var meta = document.createElement("div"); meta.className = "meta";
+      var when = document.createElement("span"); when.className = "when"; when.textContent = "#" + (i + 1) + " · you";
+      var act = document.createElement("span"); act.className = "act";
+      var go = document.createElement("button"); go.textContent = "↗"; go.title = "Go to it";
+      go.onclick = function (ev) { ev.stopPropagation(); var el = fromPath(n.path); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); };
+      var del = document.createElement("button"); del.textContent = "🗑"; del.title = "Delete";
+      del.onclick = function (ev) { ev.stopPropagation(); notes.splice(i, 1); save(); render(); pins(); };
+      act.appendChild(go); act.appendChild(del);
+      meta.appendChild(when); meta.appendChild(act);
+      d.appendChild(meta);
+      d.addEventListener("pointerenter", function () { var el = fromPath(n.path); if (el && visible) { unpeek(); el.classList.add("jx-peek"); } });
+      d.addEventListener("pointerleave", unpeek);
+      d.onclick = function () {
+        var el = fromPath(n.path);
+        if (!el) return;
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        unpeek(); el.classList.add("jx-peek"); setTimeout(unpeek, 1400);
+      };
+      list.appendChild(d);
+    });
+  }
+
+  function closePop() { if (pop) { pop.remove(); pop = null; } }
+
+  /* Any name of an element, anywhere in Jynx's own UI, is a live handle on the
+     real thing: hovering it lights the element up on the page, clicking it
+     takes you there. Without that you are reading a list of strings and
+     guessing which part of your product each one means. */
+  function unpeek() {
+    Array.prototype.forEach.call(document.querySelectorAll(".jx-peek"), function (el) { el.classList.remove("jx-peek"); });
+  }
+  function handle(node, path) {
+    if (!path) return node;
+    node.classList.add("jx-ref");
+    node.addEventListener("pointerenter", function () {
+      unpeek();
+      var el = fromPath(path);
+      if (el && visible) el.classList.add("jx-peek");
+    });
+    node.addEventListener("pointerleave", unpeek);
+    node.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var el = fromPath(path);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      unpeek(); el.classList.add("jx-peek");
+      setTimeout(unpeek, 1400);
+    });
+    return node;
+  }
+
+  function pins() {
+    Array.prototype.forEach.call(document.querySelectorAll(".jx-pin"), function (p) { p.remove(); });
+    Array.prototype.forEach.call(document.querySelectorAll(".jx-marked"), function (p) { p.classList.remove("jx-marked"); });
+    if ((!open && !sheet) || !visible) { closePop(); return; }
+
+    /* Grouped by element, not one dot per note. Three comments on one heading
+       is one dot showing 3 — otherwise a busy paragraph disappears under a
+       stack of overlapping circles. */
+    var groups = {};
+    notes.forEach(function (n, i) {
+      var key = n.path || ("free:" + (n.rect ? n.rect.join(",") : i));
+      (groups[key] = groups[key] || { key: key, path: n.path, rect: n.rect, idx: [] }).idx.push(i);
+    });
+
+    Object.keys(groups).forEach(function (key) {
+      var g = groups[key], left, top, el = g.path && fromPath(g.path);
+      if (el) { var b = el.getBoundingClientRect(); left = b.left + scrollX; top = b.top + scrollY; el.classList.add("jx-marked"); }
+      else if (g.rect) { left = g.rect[0]; top = g.rect[1]; }
+      else return;
+
+      var pin = document.createElement("div");
+      pin.className = "jx-pin";
+      pin.textContent = g.idx.length > 1 ? String(g.idx.length) : String(g.idx[0] + 1);
+      if (g.idx.length > 1) pin.classList.add("many");
+      pin.style.left = (left - 11) + "px";
+      pin.style.top = (top - 11) + "px";
+      pin.setAttribute("role", "button");
+      pin.setAttribute("aria-label", g.idx.length + " comment(s)");
+      pin.addEventListener("pointerdown", function (ev) { ev.stopPropagation(); });
+      pin.addEventListener("pointerenter", function () { if (el) el.classList.add("jx-peek"); });
+      pin.addEventListener("pointerleave", unpeek);
+      pin.addEventListener("click", function (ev) {
+        ev.stopPropagation(); ev.preventDefault();
+        openPop(g.idx, left, top);
+      });
+      document.body.appendChild(pin);
+    });
+  }
+
+  function openPop(idxs, left, top) {
+    closePop();
+    if (typeof idxs === "number") idxs = [idxs];
+    idxs = idxs.filter(function (i) { return notes[i]; });
+    if (!idxs.length) return;
+
+    pop = document.createElement("div"); pop.className = "jx-pop";
+    var head = document.createElement("span"); head.className = "w";
+    head.textContent = idxs.length + (idxs.length === 1 ? " comment" : " comments") + " · " + (notes[idxs[0]].kind || "TEXT");
+    pop.appendChild(head);
+
+    idxs.forEach(function (i, k) {
+      var n = notes[i];
+      var item = document.createElement("div"); item.className = "jx-popitem";
+      item.style.animationDelay = (k * 55) + "ms";
+      var t = document.createElement("div"); t.className = "t"; t.textContent = n.text;
+      item.appendChild(t);
+      (n.links || []).forEach(function (l) {
+        var c = handle(document.createElement("span"), l.path);
+        c.className += " lk"; c.textContent = "↳ " + l.on.slice(0, 22);
+        item.appendChild(c);
+      });
+      var row = document.createElement("div"); row.className = "row";
+      var del = document.createElement("button"); del.textContent = "Delete";
+      del.onclick = function (e) {
+        e.stopPropagation();
+        notes.splice(i, 1); save(); render(); pins(); closePop();
+      };
+      row.appendChild(del); item.appendChild(row);
+      pop.appendChild(item);
+    });
+
+    document.body.appendChild(pop);
+    var r = pop.getBoundingClientRect();
+    var x = Math.min(Math.max(8 + scrollX, left - 8), scrollX + window.innerWidth - r.width - 8);
+    var y = top + 24;
+    if (y + r.height > scrollY + window.innerHeight - 8) y = Math.max(scrollY + 8, top - r.height - 12);
+    pop.style.left = x + "px"; pop.style.top = y + "px";
+    pop.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+    pop.addEventListener("pointerleave", unpeek);
+  }
+
+  /* ---- compose ---- */
+  /* Anchored beside what you picked, never centred over the page. The mission
+     stays visible and stays scrollable; this is a note, not a destination. */
+  function askFor(kind, subject, path, rect, elKind, at) {
+    pending = { on: subject, path: path, rect: rect, links: [], kind: elKind || "AREA", at: at };
+    askK.textContent = (elKind || "NOTE").slice(0, 9);
+    askV.textContent = subject;
+    askT.value = "";
+    linkList.innerHTML = ""; linking = false;
+    var dream = $("jx-dream"), dreamT = $("jx-dream-t");
+    if (dream && dreamT) {
+      dreamT.textContent = nextLine();
+      dream.hidden = false;
+    }
+    ask.hidden = false;
+    placeAsk();
+    setTimeout(function () { try { askT.focus({ preventScroll: true }); } catch (e) { askT.focus(); } }, 20);
+  }
+
+  function placeAsk() {
+    if (ask.hidden || !pending) return;
+    var a = pending.at;
+    if (!a) {
+      var el = fromPath(pending.path);
+      if (el) { var b = el.getBoundingClientRect(); a = [b.left + scrollX, b.bottom + scrollY]; }
+      else a = [scrollX + 40, scrollY + 80];
+    }
+    var r = ask.getBoundingClientRect();
+    var x = Math.min(Math.max(scrollX + 10, a[0]), scrollX + window.innerWidth - r.width - 10);
+    var y = a[1] + 12;
+    if (y + r.height > scrollY + window.innerHeight - 10) {
+      y = Math.max(scrollY + 10, a[1] - r.height - 12);
+    }
+    ask.style.left = x + "px"; ask.style.top = y + "px";
+  }
+  function startLinking() {
+    linking = true; ask.hidden = true;
+    document.body.classList.add("jx-link");
+    hint.textContent = "Tap the element to link. Escape cancels.";
+  }
+  function renderLinks() {
+    linkList.innerHTML = "";
+    (pending ? pending.links : []).forEach(function (l, i) {
+      var chip = handle(document.createElement("span"), l.path);
+      chip.className += " jx-chipx";
+      chip.appendChild(document.createTextNode(l.on.slice(0, 20)));
+      var x = document.createElement("button");
+      x.type = "button"; x.textContent = "×"; x.title = "Remove link";
+      x.onclick = function (e) { e.preventDefault(); e.stopPropagation(); pending.links.splice(i, 1); renderLinks(); placeAsk(); };
+      chip.appendChild(x);
+      linkList.appendChild(chip);
+    });
+  }
+  function addLink(el) {
+    linking = false;
+    document.body.classList.remove("jx-link");
+    var h = document.querySelector(".jx-linking"); if (h) h.classList.remove("jx-linking");
+    if (el && pending) pending.links.push({ on: label(el), path: pathOf(el) });
+    renderLinks();
+    ask.hidden = false;
+    placeAsk();
+  }
+  linkBtn.onclick = startLinking;
+  $("jx-cancel").onclick = function () { ask.hidden = true; pending = null; clearMarq(); };
+  $("jx-save").onclick = function () {
+    var text = askT.value.trim();
+    if (!text) { ask.hidden = true; pending = null; clearMarq(); return; }
+    notes.push({ on: pending.on, path: pending.path, rect: pending.rect, text: text,
+                 links: pending.links, kind: pending.kind, shape: pending.shape });
+    sheet = true; panel.hidden = false; $("jx-show").setAttribute("aria-pressed", "true");
+    fab.classList.add("think");
+    setTimeout(function () { fab.classList.remove("think"); }, 700);
+    save(); render(); place(); pins();
+    say(nextLine(), 2600);
+    ask.hidden = true; pending = null; clearMarq();
+  };
+  ask.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+  document.addEventListener("pointerdown", function (e) {
+    if (ask.hidden || linking) return;
+    if (e.target.closest && e.target.closest(".jx-ask")) return;
+    ask.hidden = true; pending = null; clearMarq();
+  });
+
+  /* ---- point ---- */
+  function hover(e) {
+    if (!e.target || !e.target.closest) return;
+    if (linking) {
+      var prev = document.querySelector(".jx-linking"); if (prev) prev.classList.remove("jx-linking");
+      var l = e.target.closest(SEL);
+      if (l && root.contains(l)) l.classList.add("jx-linking");
+      return;
+    }
+    if (TOUCH || !open || !visible || mode !== "point") return;
+    unhover();
+    var el = e.target.closest(SEL);
+    if (!el || !root.contains(el)) return;
+    el.classList.add("jx-hl");
+    var b = el.getBoundingClientRect();
+    tag = document.createElement("div"); tag.className = "jx-tag";
+    tag.textContent = kindOf(el) + " · " + label(el).slice(0, 28);
+    tag.style.left = (b.left + scrollX) + "px"; tag.style.top = (b.top + scrollY - 20) + "px";
+    document.body.appendChild(tag);
+  }
+  function unhover() {
+    var h = document.querySelector(".jx-hl"); if (h) h.classList.remove("jx-hl");
+    if (tag) { tag.remove(); tag = null; }
+  }
+  function click(e) {
+    if (!e.target || !e.target.closest) return;
+    if (e.target.closest(".jx-root")) return;
+    if (linking) {
+      var l = e.target.closest(SEL);
+      if (!l || !root.contains(l)) return;
+      e.preventDefault(); e.stopPropagation(); addLink(l); return;
+    }
+    if (!open || mode !== "point") return;
+    var el = e.target.closest(SEL);
+    if (!el || !root.contains(el)) return;
+    e.preventDefault(); e.stopPropagation();
+    unhover();
+    askFor("Comment on", label(el), pathOf(el), null, kindOf(el), [e.pageX, e.pageY]);
+  }
+
+  /* ---- area ---- */
+  function clearMarq() { if (marq) { marq.remove(); marq = null; } aStart = null; }
+  function areaDown(e) {
+    if (!open || mode !== "area") return;
+    if (e.target.closest && e.target.closest(".jx-root")) return;
+    if (e.pointerType === "touch" && !e.isPrimary) return;
+    e.preventDefault();
+    /* clearMarq() nulls aStart, so it has to run BEFORE the new start point is
+       taken — otherwise the very next line reads .x off null and the whole
+       gesture dies on pointerdown. Area select has never once worked. */
+    clearMarq();
+    aStart = { x: e.pageX, y: e.pageY };
+    marq = document.createElement("div"); marq.className = "jx-marq";
+    marq.style.left = aStart.x + "px"; marq.style.top = aStart.y + "px";
+    document.body.appendChild(marq);
+  }
+  function areaMove(e) {
+    if (!aStart || !marq) return;
+    marq.style.left = Math.min(e.pageX, aStart.x) + "px";
+    marq.style.top = Math.min(e.pageY, aStart.y) + "px";
+    marq.style.width = Math.abs(e.pageX - aStart.x) + "px";
+    marq.style.height = Math.abs(e.pageY - aStart.y) + "px";
+  }
+  function areaUp(e) {
+    if (!aStart || !marq) return;
+    var w = Math.abs(e.pageX - aStart.x), h = Math.abs(e.pageY - aStart.y);
+    if (w < 12 || h < 12) { clearMarq(); return; }
+    var x = Math.min(e.pageX, aStart.x), y = Math.min(e.pageY, aStart.y);
+    var inside = Array.prototype.filter.call(root.querySelectorAll(SEL), function (el) {
+      var b = el.getBoundingClientRect();
+      return b.left + scrollX < x + w && b.right + scrollX > x && b.top + scrollY < y + h && b.bottom + scrollY > y;
+    });
+    aStart = null;
+    askFor("Area · " + inside.length + " element" + (inside.length === 1 ? "" : "s"),
+      inside.length ? label(inside[0]) + (inside.length > 1 ? " +" + (inside.length - 1) : "") : "empty region",
+      inside.length ? pathOf(inside[0]) : null, [x, y], "AREA", [x, y + h]);
+  }
+
+  /* ---- draw ----
+
+     Straight from the product: a stroke that ends near where it started is a
+     closed POLYGON rather than an open line, at a 3% threshold. No separate
+     shape tool — you draw a loop around something and the loop becomes an
+     object with a comment on it. Points are stored as percentages of the
+     viewport so a drawing lands in the right relative place on a different
+     screen. SVG rather than canvas precisely so the polygon is a real element
+     that can be hovered and clicked afterwards. */
+  var CLOSE_PCT = 3;
+  var svg = null, live = null, drawPts = null, shapes = [];
+
+  function makeSvg() {
+    if (svg) return;
+    svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.id = "jx-svg";
+    document.body.appendChild(svg);
+    sizeSvg();
+  }
+  function sizeSvg() {
+    if (!svg) return;
+    var w = document.documentElement.scrollWidth, h = document.documentElement.scrollHeight;
+    svg.setAttribute("width", w); svg.setAttribute("height", h);
+    svg.setAttribute("viewBox", "0 0 " + w + " " + h);
+    svg.style.width = w + "px"; svg.style.height = h + "px";
+  }
+  function pct(x, y) { return [(x / window.innerWidth) * 100, (y / window.innerHeight) * 100]; }
+  function px(p) { return [(p[0] / 100) * window.innerWidth, (p[1] / 100) * window.innerHeight]; }
+
+  function drawShape(shape, index) {
+    var pts = shape.points.map(px);
+    var closed = shape.type === "polygon";
+    var node = document.createElementNS("http://www.w3.org/2000/svg", closed ? "polygon" : "polyline");
+    node.setAttribute("points", pts.map(function (p) { return p[0] + "," + (p[1] + shape.scroll); }).join(" "));
+    node.setAttribute("stroke", "#7C5CFC");
+    node.setAttribute("stroke-width", "2.6");
+    node.setAttribute("stroke-linecap", "round");
+    node.setAttribute("stroke-linejoin", "round");
+    node.setAttribute("fill", closed ? "#7C5CFC" : "none");
+    node.setAttribute("fill-opacity", closed ? ".16" : "0");
+    if (closed) {
+      node.setAttribute("class", "shape");
+      node.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var i = typeof index === "number" ? index : shapes.indexOf(shape);
+        var n = notes.findIndex(function (x) { return x.shape === i; });
+        if (n > -1) { var b = node.getBoundingClientRect(); openPop(n, b.left + scrollX, b.top + scrollY); }
+      });
+    }
+    svg.appendChild(node);
+    return node;
+  }
+  function redraw() {
+    if (!svg) return;
+    svg.innerHTML = "";
+    shapes.forEach(drawShape);
+  }
+
+  (function drawing() {
+    var on = false;
+    document.addEventListener("pointerdown", function (e) {
+      if (!open || mode !== "draw") return;
+      if (e.target.closest && e.target.closest(".jx-root")) return;
+      makeSvg(); sizeSvg();
+      on = true; drawPts = [pct(e.clientX, e.clientY)];
+      live = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+      live.setAttribute("stroke", "#7C5CFC"); live.setAttribute("stroke-width", "2.6");
+      live.setAttribute("fill", "none"); live.setAttribute("stroke-linecap", "round");
+      svg.appendChild(live);
+      e.preventDefault();
+    });
+    document.addEventListener("pointermove", function (e) {
+      if (!on || !live) return;
+      drawPts.push(pct(e.clientX, e.clientY));
+      live.setAttribute("points", drawPts.map(function (p) {
+        var q = px(p); return q[0] + "," + (q[1] + scrollY);
+      }).join(" "));
+      e.preventDefault();
+    });
+    document.addEventListener("pointerup", function () {
+      if (!on) return;
+      on = false;
+      if (!drawPts || drawPts.length < 3) { if (live) live.remove(); live = null; drawPts = null; return; }
+      var a = drawPts[0], b = drawPts[drawPts.length - 1];
+      var closed = Math.hypot(b[0] - a[0], b[1] - a[1]) < CLOSE_PCT;
+      var shape = { points: drawPts, type: closed ? "polygon" : "freehand", scroll: scrollY };
+      shapes.push(shape);
+      if (live) live.remove();
+      live = null; drawPts = null;
+      redraw();
+      var qa = px(a);
+      askFor(closed ? "Comment on this shape" : "Comment on this mark",
+        closed ? "a closed shape" : "a freehand mark",
+        null, null, closed ? "SHAPE" : "MARK", [qa[0], qa[1] + shape.scroll]);
+      pending.shape = shapes.length - 1;
+    });
+  })();
+
+  /* ---- modes ---- */
+  function setMode(m) {
+    mode = m;
+    Array.prototype.forEach.call(bar.querySelectorAll(".jx-t[data-mode]"), function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.mode === m));
+    });
+    hint.textContent = (TOUCH ? TOUCH_HINTS : HINTS)[m];
+    document.body.classList.toggle("jx-draw", m === "draw");
+    document.body.classList.toggle("jx-area", m === "area");
+    document.body.classList.toggle("jx-point", m === "point");
+    unhover(); clearMarq();
+    if (m === "draw") { makeSvg(); sizeSvg(); redraw(); }
+  }
+  function toggle(next) {
+    open = next === undefined ? !open : next;
+    bar.hidden = !open;
+    if (!open) { sheet = false; panel.hidden = true; $("jx-show").setAttribute("aria-pressed", "false"); }
+    if (open) { place(); setMode(mode); render(); }
+    else {
+      unhover(); clearMarq(); closePop();
+      document.body.classList.remove("jx-draw", "jx-area", "jx-point");
+    }
+    pins();
+  }
+  function toggleSheet(next) {
+    sheet = next === undefined ? !sheet : next;
+    panel.hidden = !sheet;
+    $("jx-show").setAttribute("aria-pressed", String(sheet));
+    if (sheet) { render(); place(); }
+    pins();
+  }
+
+  bar.addEventListener("click", function (e) {
+    var b = e.target.closest(".jx-t");
+    if (b && b.dataset.mode) setMode(b.dataset.mode);
+  });
+  /* The eye is not a mode. It is the master switch for everything Jynx puts on
+     the screen — hover highlights, pins, markers, drawings. Off means the page
+     is just the page again, with the work still there when you turn it back on. */
+  function setVisible(v) {
+    visible = v;
+    $("jx-eye").setAttribute("aria-pressed", String(visible));
+    document.body.classList.toggle("jx-hidden", !visible);
+    if (!visible) { unhover(); closePop(); unpeek(); }
+    pins();
+    hint.textContent = visible
+      ? (TOUCH ? TOUCH_HINTS : HINTS)[mode]
+      : "Jynx is out of the way. Everything you left is still here.";
+  }
+  $("jx-eye").addEventListener("click", function () { setVisible(!visible); });
+  $("jx-show").addEventListener("click", function () { toggleSheet(); });
+  $("jx-bar-close").addEventListener("click", function () { toggle(false); });
+  $("jx-panel-close").addEventListener("click", function () { toggleSheet(false); });
+  $("jx-cta").addEventListener("click", function () {
+    askFor("Feedback about Jynx", "the document as a whole", null, [scrollX + 40, scrollY + 40], "FEEDBACK",
+      [scrollX + 40, scrollY + window.scrollY + 120]);
+  });
+  Array.prototype.forEach.call(panel.querySelectorAll(".jx-f"), function (b) {
+    b.addEventListener("click", function () {
+      b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true");
+    });
+  });
+
+  var topbar = $("jx-top") || document.querySelector(".jx-open");
+  if (topbar) topbar.addEventListener("click", function (e) { e.preventDefault(); toggle(true); });
+
+  /* Opened straight from a message, the file lives inside that app's sandbox.
+     No page can promote itself into the system browser — window.open() from an
+     in-app webview either opens another in-app tab or is ignored, and Safari
+     cannot read another app's container even if the path were known. That is an
+     OS boundary, not something to code around.
+     So: try the one move that sometimes works, and if we are still here a
+     moment later, say plainly what to tap. */
+  /* Opened from a message the file sits in that app's sandbox: no page can
+     promote itself into the system browser, and the browser could not read the
+     file if it tried. So try the one move that sometimes works — and when it
+     doesn't, open the help, which already says exactly what to tap. */
+  if (location.protocol === "file:" && topbar) {
+    topbar.addEventListener("click", function () {
+      var w = null;
+      try { w = window.open(location.href, "_blank", "noopener"); } catch (e) {}
+      setTimeout(function () {
+        if (w || document.hidden) return;
+        var help = $("jx-help");
+        if (help) { help.open = true; help.scrollIntoView({ block: "nearest" }); }
+      }, 320);
+    });
+  }
+
+  var inline = $("jx-open-inline");
+  if (inline) inline.addEventListener("click", function (e) { e.preventDefault(); toggle(true); });
+
+  $("jx-copy").onclick = function () {
+    if (!notes.length) { hint.textContent = "Nothing to copy yet — leave a comment first."; return; }
+    var out = "Notes on the Jynx document\n\n" + notes.map(function (n, i) {
+      return (i + 1) + ". [" + (n.kind || "TEXT") + "] " + n.on
+        + ((n.links || []).length ? "  ↳ " + n.links.map(function (l) { return l.on; }).join(", ") : "")
+        + "\n   " + n.text;
+    }).join("\n\n");
+    var done = function () { hint.textContent = "Copied " + notes.length + " comment(s)."; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(out).then(done, done);
+    else {
+      var ta = document.createElement("textarea"); ta.value = out;
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); } catch (e) {}
+      ta.remove(); done();
+    }
+  };
+  $("jx-clear").onclick = function () {
+    notes = []; save(); render(); pins();
+    shapes = []; redraw();
+    hint.textContent = (TOUCH ? TOUCH_HINTS : HINTS)[mode];
+  };
+
+  /* On a phone the browser gestures already mean something — a tap scrolls or
+     follows, a drag scrolls. So Jynx takes over the two gestures that mean
+     "this thing here": a long press, and a text selection. */
+  (function touchGestures() {
+    if (!TOUCH) return;
+    var timer = null, startPt = null, held = null;
+
+    document.addEventListener("pointerdown", function (e) {
+      if (!open || mode !== "point") return;
+      if (e.target.closest && e.target.closest(".jx-root, .jx-pin")) return;
+      var el = e.target.closest && e.target.closest(SEL);
+      if (!el || !root.contains(el)) return;
+      startPt = { x: e.clientX, y: e.clientY };
+      held = el;
+      timer = setTimeout(function () {
+        timer = null;
+        if (!held) return;
+        held.classList.add("jx-hl");
+        if (navigator.vibrate) { try { navigator.vibrate(12); } catch (err) {} }
+        setTimeout(function () { held && held.classList.remove("jx-hl"); }, 260);
+        askFor("Comment on", label(held), pathOf(held), null, kindOf(held), [startPt.x + scrollX, startPt.y + scrollY]);
+        held = null;
+      }, 420);
+    }, { passive: true });
+
+    function cancel(e) {
+      if (timer && startPt && e && Math.hypot(e.clientX - startPt.x, e.clientY - startPt.y) < 10) return;
+      clearTimeout(timer); timer = null; held = null;
+    }
+    document.addEventListener("pointermove", cancel, { passive: true });
+    document.addEventListener("pointerup", function () { clearTimeout(timer); timer = null; held = null; }, { passive: true });
+
+    /* Selecting text is already the phone's way of saying "this bit". */
+    document.addEventListener("selectionchange", function () {
+      if (!open) { hideSelChip(); return; }
+      var sel = document.getSelection();
+      if (!sel || sel.isCollapsed || !String(sel).trim()) { hideSelChip(); return; }
+      var node = sel.anchorNode;
+      var el = node && (node.nodeType === 1 ? node : node.parentElement);
+      if (!el || !el.closest || el.closest(".jx-root")) { hideSelChip(); return; }
+      var target = el.closest(SEL);
+      if (!target || !root.contains(target)) { hideSelChip(); return; }
+      showSelChip(sel, target);
+    });
+  })();
+
+  var selChip = null;
+  function hideSelChip() { if (selChip) { selChip.remove(); selChip = null; } }
+  function showSelChip(sel, target) {
+    hideSelChip();
+    var text = String(sel).trim().slice(0, 60);
+    var r;
+    try { r = sel.getRangeAt(0).getBoundingClientRect(); } catch (e) { return; }
+    if (!r || (!r.width && !r.height)) return;
+    selChip = document.createElement("button");
+    selChip.className = "jx-selchip";
+    selChip.textContent = "Comment on this";
+    selChip.style.left = Math.max(8, Math.min(r.left + scrollX, scrollX + window.innerWidth - 168)) + "px";
+    selChip.style.top = (r.bottom + scrollY + 8) + "px";
+    selChip.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+    selChip.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      hideSelChip();
+      askFor("Comment on", "“" + text + "”", pathOf(target), null, "SELECTION", [r.left + scrollX, r.bottom + scrollY]);
+      try { document.getSelection().removeAllRanges(); } catch (err) {}
+    });
+    document.body.appendChild(selChip);
+  }
+
+  document.addEventListener("pointerover", hover);
+  document.addEventListener("click", click, true);
+  document.addEventListener("pointerdown", areaDown);
+  document.addEventListener("pointermove", areaMove);
+  document.addEventListener("pointerup", areaUp);
+  document.addEventListener("pointerdown", function (e) {
+    if (pop && !pop.contains(e.target) && !(e.target.closest && e.target.closest(".jx-pin"))) closePop();
+  });
+  window.addEventListener("scroll", function () {
+    if (pinned) { repin(); }
+    else {
+      // Did the bubble scroll away with the page? Then fixed is not being honoured.
+      var r = fab.getBoundingClientRect();
+      if (r.bottom > window.innerHeight + 6 || r.top < -6 || r.right > window.innerWidth + 6) goManual();
+    }
+    pins(); closePop();
+  }, { passive: true });
+  window.addEventListener("resize", function () { place(); placeAsk(); sizeSvg(); redraw(); pins(); });
+
+  /* Hotkeys — 1..5 for the tools, Escape backs out one level at a time. */
+  document.addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = e.target.tagName;
+    if (t === "TEXTAREA" || t === "INPUT") {
+      if (e.key === "Escape") { ask.hidden = true; pending = null; clearMarq(); }
+      return;
+    }
+    if (e.key === "Escape") {
+      if (linking) { addLink(null); return; }
+      if (!ask.hidden) { ask.hidden = true; pending = null; clearMarq(); return; }
+      if (pop) { closePop(); return; }
+      if (sheet) { toggleSheet(false); return; }
+      if (open) toggle(false);
+      return;
+    }
+    if (!open) return;
+    var keys = { "1": "point", "2": "area", "3": "draw" };
+    if (keys[e.key]) { e.preventDefault(); setMode(keys[e.key]); }
+    else if (e.key === "4") { e.preventDefault(); setVisible(!visible); }
+    else if (e.key === "5") { e.preventDefault(); toggleSheet(); }
+  });
+
+  /* A nudge, not a tour: it appears once, says one thing, and leaves. */
+  (function () {
+    if (ls("jynx-hello") === "1") return;
+    setTimeout(function () { say("Try me", 2800); ls("jynx-hello", "1"); }, 1100);
+  })();
+
+  liftChrome();
+  try { notes = JSON.parse(ls(KEY) || "[]"); } catch (e) { notes = []; }
+  bump();
+  if (!durable && warn) {
+    warn.hidden = false;
+    warn.textContent = "Opened as a file — comments last for this visit only.";
+  }
+  pins();
+})();
+</script>
+<!-- /jynx-widget -->
+</body>
+</html>
