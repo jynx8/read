@@ -204,6 +204,26 @@
     align-items:center;gap:2px;pointer-events:none}
   .nn-col b{font-family:var(--f-mono);font-size:10px;font-weight:500;letter-spacing:.24em;color:rgba(255,255,255,.80)}
   .nn-col i{font-family:var(--f-mono);font-size:7.5px;font-style:normal;letter-spacing:.13em;color:rgba(255,255,255,.30)}
+  .nn-fb{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:14px;padding:22px;background:#05070A;text-align:center}
+  .nn.is-live .nn-fb{display:none}
+  .nn-fb-g{display:flex;align-items:flex-start;justify-content:center;gap:14px;flex-wrap:wrap}
+  .nn-fb-g > div{display:flex;flex-direction:column;gap:4px;align-items:stretch;min-width:82px}
+  .nn-fb-g .ar{justify-content:center;min-width:0;color:rgba(255,255,255,.28);font-family:var(--f-mono);padding-top:26px}
+  .nn-fb-g b{font-family:var(--f-mono);font-size:8.5px;letter-spacing:.2em;color:rgba(255,255,255,.72);margin-bottom:4px}
+  .nn-fb-g span{font-family:var(--f-mono);font-size:9.5px;padding:2.5px 6px;border-radius:2px;
+    border:1px solid rgba(255,255,255,.16);color:rgba(255,255,255,.72)}
+  .nn-fb-g span.on{background:#7C5CFC;border-color:#7C5CFC;color:#fff}
+  .nn-fb-g span.rent{border-color:rgba(120,225,255,.45);color:#78E1FF}
+  .nn-fb-g span.gate{background:#fff;border-color:#fff;color:#05070A}
+  .nn-fb-n{font-family:var(--f-mono);font-size:9px;line-height:1.6;color:rgba(255,255,255,.42);max-width:44ch;margin:0}
+  .nn-fb-n b{color:rgba(255,255,255,.75);font-weight:400}
+  .nn-fb-b{display:inline-flex;align-items:center;gap:8px;background:#7C5CFC;color:#fff;text-decoration:none;
+    font-family:var(--f-display);font-weight:700;font-size:14px;letter-spacing:-.01em;padding:9px 18px;border-radius:9px}
+  .nn-fb-b em{font-style:normal}
+  .nn-fb-b:hover{background:#9B82FF}
+  .nn-fb-s{font-family:var(--f-mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;
+    color:rgba(255,255,255,.32);margin:0}
   .nn-hud{position:absolute;left:22px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:16px;pointer-events:none;max-width:150px}
   .nn-t{font-family:var(--f-mono);font-size:9px;letter-spacing:.18em;color:rgba(255,255,255,.62);border-bottom:1px solid rgba(255,255,255,.14);padding-bottom:9px}
   .nn-r{display:flex;flex-direction:column;gap:2px}
@@ -228,6 +248,12 @@
     .nn-tag.off b,.nn-tag.gate b{display:none}
     .nn-col i{display:none}
     .nn-col b{font-size:7.5px;letter-spacing:.14em}
+    .nn-fb{gap:11px;padding:14px}
+    .nn-fb-g{gap:8px}
+    .nn-fb-g > div{min-width:66px}
+    .nn-fb-g span{font-size:8px;padding:2px 4px}
+    .nn-fb-g .ar{display:none}
+    .nn-fb-n{font-size:8px}
     .nn-ft{left:12px;right:12px;bottom:10px;font-size:7px;letter-spacing:.08em;text-align:left}
   }
   .figure svg{display:block;width:100%;height:auto;min-width:540px}
@@ -635,6 +661,26 @@
       <div class="nn-r"><b>1</b><span>human gate,<br>before release</span></div>
     </div>
     <div class="nn-ft">→ VIOLET: OURS &nbsp;·&nbsp; CYAN: FRONTIER &nbsp;·&nbsp; DASHED: VERIFIED OUTCOMES RETURNING TO THE RECORD</div>
+
+    <!-- Shown until the canvas has actually painted a frame. Opened as a saved
+         file — from a chat app, from a mail attachment — many viewers run no
+         script at all, and an animated panel becomes a black rectangle in the
+         middle of the document. This is the same diagram, flat, plus the way
+         to the version that moves. -->
+    <div class="nn-fb" id="nn-fb">
+      <div class="nn-fb-g">
+        <div><b>SURFACE</b><span>comment</span><span>drawing</span><span>selection</span><span>@mention</span></div>
+        <div class="ar">→</div>
+        <div><b>CONTEXT</b><span>element</span><span>owner</span><span>history</span><span>state</span><span>tests</span></div>
+        <div class="ar">→</div>
+        <div><b>MESH</b><span class="on">intent</span><span class="on">locator</span><span class="on">planner</span><span class="on">patcher</span><span class="on">verifier</span><span class="rent">frontier</span></div>
+        <div class="ar">→</div>
+        <div><b>SHIP</b><span>proposal</span><span class="gate">review</span><span>release</span></div>
+      </div>
+      <p class="nn-fb-n">Verified outcomes run back from <b>verifier</b> into <b>history</b>. That loop is the compounding.</p>
+      <a class="nn-fb-b" href="https://jynx8.github.io/read/FORNOTE.html">Jynx it <em>→</em></a>
+      <p class="nn-fb-s">This panel is live on the web version — traffic routing across the mesh in real time.</p>
+    </div>
   </div>
   <p class="cap">
     <strong>These are the layers.</strong> Not the ones an org chart draws — the
@@ -1551,6 +1597,10 @@
         ctx.strokeStyle = "rgba(" + LILAC + ",.28)"; ctx.lineWidth = .8; ctx.stroke();
       }
     });
+
+    /* The fallback stays until a frame has genuinely been drawn — not when the
+       script starts, which proves nothing about whether the canvas works. */
+    if (!host.classList.contains("is-live")) host.classList.add("is-live");
 
     requestAnimationFrame(frame);
   }
