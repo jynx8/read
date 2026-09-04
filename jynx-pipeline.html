@@ -766,7 +766,7 @@
   .jx-note .meta{display:flex;align-items:center;gap:9px;margin-top:9px;padding-top:9px;border-top:1px solid var(--c-line)}
   .jx-note .meta .when{font-family:var(--f-mono,monospace);font-size:10px;color:var(--c-dim)}
   .jx-note .meta .act{margin-left:auto;display:flex;gap:6px}
-  .jx-note .meta .act button{width:26px;height:26px;border-radius:7px;border:1px solid var(--c-line);background:transparent;
+  .jx-note .meta .act button{width:30px;height:30px;border-radius:7px;border:1px solid var(--c-line);background:transparent;
     color:var(--c-dim);cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
   .jx-note .meta .act button:hover{color:var(--c-text);border-color:var(--c-jynx)}
 
@@ -865,7 +865,14 @@
   .jx-pin:hover span,.jx-pin:focus-visible span{opacity:1}
   .jx-pin.many{width:18px;height:18px}
   .jx-pin.many span{opacity:1}
-  @media (max-width:600px){ .jx-pin{width:18px;height:18px;font-size:9.5px} .jx-pin span{opacity:1} }
+  @media (max-width:600px){
+    .jx-pin{width:22px;height:22px;font-size:10px} .jx-pin span{opacity:1}
+    /* The dot stays small so it does not cover the thing it points at, but the
+       thing your thumb has to find is 44px. Invisible, centred, and the only
+       reason a pin is tappable at all on a phone. */
+    .jx-pin::after{content:"";position:absolute;left:50%;top:50%;width:44px;height:44px;
+      transform:translate(-50%,-50%);border-radius:50%}
+  }
 
   /* Hovering any reference to an element, anywhere in Jynx, lights the real
      thing up. Confirmation without having to guess. */
@@ -887,10 +894,17 @@
     margin:-2px 0 9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .jx-pop .who{font-family:var(--f-mono,monospace);font-size:9px;letter-spacing:.06em;
     text-transform:uppercase;color:var(--c-jynx);margin-bottom:4px}
-  .jx-pop .x{margin-top:8px;background:none;border:none;padding:0;cursor:pointer;
-    font-family:var(--f-mono,monospace);font-size:9px;letter-spacing:.06em;text-transform:uppercase;
-    color:var(--c-dim);opacity:.7}
-  .jx-pop .x:hover{opacity:1;color:var(--c-amber)}
+  /* Deleting your own comment was a 36x11 text link. On a phone that is below
+     every tap-target guideline there is — the control existed and could not be
+     hit, which to the person holding the phone is the same as not existing.
+     A real button, and on touch a real 44px target. */
+  .jx-pop .x{margin-top:10px;background:transparent;border:1px solid var(--c-line);border-radius:8px;
+    padding:7px 11px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+    font-family:var(--f-mono,monospace);font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--c-dim);transition:color .14s ease,border-color .14s ease,background .14s ease}
+  .jx-pop .x::before{content:"\2715";font-size:11px;line-height:1}
+  .jx-pop .x:hover,.jx-pop .x:focus-visible{color:var(--c-amber);border-color:var(--c-amber);
+    background:color-mix(in srgb, var(--c-amber) 12%, transparent)}
   .jx-pop .row{display:flex;gap:7px;margin-top:12px;padding-top:11px;border-top:1px solid var(--c-line)}
   .jx-pop .row .go{background:var(--c-jynx);border-color:var(--c-jynx);color:var(--c-ink)}
   .jx-pop .row button{flex:1;border-radius:9px;padding:8px;cursor:pointer;font-family:var(--f-body,system-ui),sans-serif;font-weight:700;font-size:12px;
@@ -981,6 +995,10 @@
     /* 16px is not a taste decision — anything smaller and iOS zooms the page
        on focus, and a zoomed page pans sideways. Everything else tightens: the
        composer was covering half the display. */
+    /* 44px, the size of a fingertip. Anything smaller is decoration. */
+    .jx-pop .x{padding:12px 16px;font-size:11px;min-height:44px}
+    .jx-note .meta .act button{width:38px;height:38px}
+    .jx-pin{width:24px;height:24px}
     .jx-ask textarea{font-size:16px;min-height:42px;padding:9px 12px}
     .jx-ask .hd{padding:8px 11px}
     .jx-ask .ft{padding:7px 10px;gap:6px}
