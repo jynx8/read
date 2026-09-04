@@ -209,7 +209,7 @@
   .nn-r{display:flex;flex-direction:column;gap:2px}
   .nn-r b{font-family:var(--f-mono);font-size:17px;font-weight:500;color:#9B82FF;letter-spacing:-.02em}
   .nn-r span{font-family:var(--f-mono);font-size:8px;line-height:1.45;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.42)}
-  .nn-ft{position:absolute;right:22px;bottom:18px;font-family:var(--f-mono);font-size:9px;letter-spacing:.16em;color:rgba(255,255,255,.34)}
+  .nn-ft{position:absolute;right:22px;left:22px;bottom:14px;text-align:right;font-family:var(--f-mono);font-size:9px;letter-spacing:.16em;color:rgba(255,255,255,.34)}
   @media (max-width:620px){
     /* On a phone the tags and the HUD land on top of each other and the whole
        thing reads as noise. Keep the network and the hub, drop the annotation —
@@ -223,10 +223,12 @@
     .nn-hud{display:none}
     .nn-tag i{display:none}
     .nn-tag b{font-size:7.5px;padding:1px 4px}
+    .nn-tag.r{padding-left:11px}
+    .nn-tag.l{padding-right:11px}
     .nn-tag.off b,.nn-tag.gate b{display:none}
     .nn-col i{display:none}
     .nn-col b{font-size:7.5px;letter-spacing:.14em}
-    .nn-ft{left:14px;bottom:12px;font-size:7.5px;letter-spacing:.1em}
+    .nn-ft{left:12px;right:12px;bottom:10px;font-size:7px;letter-spacing:.08em;text-align:left}
   }
   .figure svg{display:block;width:100%;height:auto;min-width:540px}
   @media (max-width:620px){
@@ -1370,7 +1372,7 @@
   EDGES.push([BY.rv, BY.hi, 2]);
 
   /* Traffic. Each packet is one request finding its way across. */
-  var PACKETS = [], MAXP = 26;
+  var PACKETS = [], MAXP = 40;
   function spawn() {
     var start = COLS[0].nodes[(rnd() * COLS[0].nodes.length) | 0];
     /* Most work clears on the small models; the hard tail goes to frontier.
@@ -1390,14 +1392,16 @@
   }
 
   var W = 0, H = 0, DPR = 1, P = {};
+  /* narrow panels give the wrapped footer and the column heads more room */
   function measure() {
     var r = host.getBoundingClientRect();
     W = r.width; H = r.height;
     DPR = Math.min(window.devicePixelRatio || 1, 2);
     cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    var top = W < 620 ? 0.175 : 0.20, band = W < 620 ? 0.645 : 0.68;
     NODES.forEach(function (n) {
-      P[n.id] = { x: n.x * W, y: 0.20 * H + n.y * H * 0.68, r: (n.hub ? 13 : n.gate ? 11 : 9) * Math.min(1, W / 780) };
+      P[n.id] = { x: n.x * W, y: top * H + n.y * H * band, r: (n.hub ? 14 : n.gate ? 12 : 10) * Math.max(0.78, Math.min(1, W / 780)) };
     });
     seed = 20260904;
     EDGES.forEach(function (e) { e[3] = rr(-1, 1); });
@@ -1447,27 +1451,41 @@
     ctx.clearRect(0, 0, W, H);
 
     /* backdrop: a faint measured grid, so the thing reads as an instrument */
-    ctx.strokeStyle = "rgba(255,255,255,.030)"; ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(255,255,255,.055)"; ctx.lineWidth = 1;
     for (var gx = 0; gx < W; gx += 46) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
     for (var gy = 0; gy < H; gy += 46) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
 
-    /* the fabric */
+    /* the fabric
+       Three strands per edge rather than one hairline. A single curve at the
+       alpha this needs is invisible on a phone in daylight — the whole panel
+       reads as an empty black square — and bundling is also what the thing
+       actually looks like: many paths between the same two points, not one
+       wire. Cheap, because the strands are the same bezier with a nudge. */
+    var STRAND = [[0, .16], [-3.2, .085], [3.2, .085]];
     EDGES.forEach(function (e) {
-      var b = bez(e[0], e[1], e[3]);
-      ctx.beginPath();
-      ctx.moveTo(b.x0, b.y0); ctx.bezierCurveTo(b.cx1, b.cy1, b.cx2, b.cy2, b.x1, b.y1);
       if (e[2] === 2) {
-        ctx.strokeStyle = "rgba(" + ICE + ",.16)";
-        ctx.setLineDash([3, 5]); ctx.lineWidth = 1;
-      } else {
-        ctx.strokeStyle = "rgba(255,255,255,.075)";
-        ctx.setLineDash([]); ctx.lineWidth = .7;
+        var d = bez(e[0], e[1], e[3]);
+        ctx.beginPath();
+        ctx.moveTo(d.x0, d.y0); ctx.bezierCurveTo(d.cx1, d.cy1, d.cx2, d.cy2, d.x1, d.y1);
+        ctx.strokeStyle = "rgba(" + ICE + ",.42)";
+        ctx.setLineDash([3, 5]); ctx.lineWidth = 1.1;
+        ctx.stroke(); ctx.setLineDash([]);
+        return;
       }
-      ctx.stroke(); ctx.setLineDash([]);
+      for (var si = 0; si < STRAND.length; si++) {
+        var b = bez(e[0], e[1], e[3] + STRAND[si][0] * 0.11);
+        ctx.beginPath();
+        ctx.moveTo(b.x0, b.y0);
+        ctx.bezierCurveTo(b.cx1 + STRAND[si][0], b.cy1 + STRAND[si][0],
+                          b.cx2 + STRAND[si][0], b.cy2 + STRAND[si][0], b.x1, b.y1);
+        ctx.strokeStyle = "rgba(255,255,255," + STRAND[si][1] + ")";
+        ctx.lineWidth = si ? .55 : .8;
+        ctx.stroke();
+      }
     });
 
     /* traffic */
-    if (PACKETS.length < MAXP && rnd() < 0.10) spawn();
+    if (PACKETS.length < MAXP && rnd() < 0.18) spawn();
     for (var i = PACKETS.length - 1; i >= 0; i--) {
       var pk = PACKETS[i];
       pk.t += pk.sp * (dt / 16);
@@ -1509,11 +1527,11 @@
 
       ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, Math.PI * 2);
       ctx.fillStyle = "#05070A"; ctx.fill();
-      ctx.strokeStyle = own ? "rgba(" + LILAC + ",.95)"
-                     : rent ? "rgba(" + ICE + ",.80)"
-                     : n.gate ? "rgba(255,255,255,.92)"
-                     : "rgba(255,255,255,.46)";
-      ctx.lineWidth = n.hub || n.gate ? 1.9 : 1.1;
+      ctx.strokeStyle = own ? "rgba(" + LILAC + ",1)"
+                     : rent ? "rgba(" + ICE + ",.95)"
+                     : n.gate ? "rgba(255,255,255,1)"
+                     : "rgba(255,255,255,.72)";
+      ctx.lineWidth = n.hub || n.gate ? 2.2 : 1.5;
       ctx.stroke();
 
       if (hot > 0.02) {
