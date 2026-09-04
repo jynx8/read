@@ -2225,11 +2225,14 @@
     var WANT = [
       { find: "Everything else is distraction", author: "Ziv",  ago: "2h",
         text: "This is the line. Lead every deck with it." },
-      { find: "Six models. Five are ours",      author: "Yoav", ago: "5h",
+      { find: "Six jobs, not one",              author: "Yoav", ago: "5h",
         text: "Can we show cost per task next to each one? That is the number people ask about." },
       { find: "What has to be true",            author: "Ziv",  ago: "1d",
         text: "Year 2 assumes self-hosting is ready. Worth stating what that depends on." }
     ];
+    /* Seeds anchor by the text they are about, so a heading that gets reworded
+       silently loses its comment. Say so rather than shipping two pins where
+       three were intended. */
     var made = 0;
     WANT.forEach(function (w) {
       var el = Array.prototype.find.call(root.querySelectorAll("h1,h2,h3,p,li,td"), function (n) {
@@ -2241,6 +2244,9 @@
       made++;
     });
     if (made) { ls("jynx-seeded", "1"); save(); }
+    if (made < WANT.length && window.console) {
+      console.warn("[jynx] " + (WANT.length - made) + " seeded comment(s) found no anchor — a heading was reworded.");
+    }
   })();
   bump();
   if (!durable && warn) {

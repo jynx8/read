@@ -104,6 +104,37 @@
   .grow .w{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--jynx)}
   .grow p{margin:0;font-size:14.5px;max-width:none}
 
+  /* ---- the surfaces ---- */
+  .surf{display:grid;grid-template-columns:1.25fr 1fr;gap:26px 30px;align-items:center;margin:28px 0 8px}
+  .s-card{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0E1114}
+  .s-head,.s-bar{display:flex;align-items:center;gap:6px;padding:9px 12px;background:#141821;border-bottom:1px solid #1E242B}
+  .s-dot{width:8px;height:8px;border-radius:50%;background:#2C333B}
+  .s-file,.s-url{font-family:var(--f-mono);font-size:10px;color:#7C8794;margin-left:6px}
+  .s-bar{justify-content:space-between}
+  .s-ext{display:flex;gap:3.5px;padding:4px 7px;border:1px solid var(--jynx);border-radius:9px}
+  .s-ext i{width:4px;height:4px;border-radius:50%;background:var(--jynx)}
+  .s-body{position:relative;padding:12px 0 58px}
+  .s-row{display:flex;gap:10px;padding:2px 12px;font-family:var(--f-mono);font-size:11px;color:#95A1AE;white-space:nowrap;overflow:hidden}
+  .s-row .ln{color:#3D4650;min-width:16px;text-align:right}
+  .s-row em{color:#9B82FF;font-style:normal}
+  .s-row.sel{background:rgba(124,92,252,.13);box-shadow:inset 2px 0 0 var(--jynx)}
+  .s-body.web{padding:16px 14px 58px}
+  .s-h{height:12px;width:52%;border-radius:4px;background:#1B2129;margin-bottom:11px}
+  .s-line{height:6px;border-radius:3px;background:#171C23;margin-bottom:6px}
+  .s-line.w1{width:88%} .s-line.w2{width:62%}
+  .s-btn{display:inline-block;margin-top:12px;padding:7px 14px;border-radius:8px;background:#1B2129;color:#8A9199;font-size:11.5px;font-weight:600}
+  .s-btn.hl{outline:2px solid var(--jynx);outline-offset:2px;color:#C6BAFF}
+  .s-pop{position:absolute;left:12px;right:12px;bottom:10px;background:#171B20;border:1px solid var(--jynx);
+    border-radius:10px;padding:9px 11px;font-size:12px;line-height:1.45;color:#DDE1E6}
+  .s-pop.right{left:auto;right:12px;width:74%}
+  .s-pop .w{display:flex;align-items:center;gap:4px;font-family:var(--f-mono);font-size:8.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--jynx);margin-bottom:5px}
+  .s-pop .w i{width:4px;height:4px;border-radius:50%;background:var(--jynx)}
+  .s-meta{display:block;margin-top:6px;font-family:var(--f-mono);font-size:9px;color:#6B7480}
+  .s-note h4{font-size:16px;margin-bottom:6px}
+  .s-note p{font-size:14.5px;color:var(--dim);margin:0}
+  @media (max-width:660px){ .surf{grid-template-columns:1fr;gap:14px} .s-note{margin-bottom:14px} }
+
   /* ---- the phone concept ---- */
   .phone{display:grid;grid-template-columns:236px 1fr;gap:34px;align-items:start;margin:28px 0 24px}
   .ph-frame{position:relative;border:2px solid var(--line);border-radius:26px;padding:7px;background:#0B0D0F;box-shadow:0 12px 34px rgba(0,0,0,.22)}
@@ -723,7 +754,7 @@
 
 <section>
   <span class="eyebrow">The mesh</span>
-  <h2>Six models. Five are ours.</h2>
+  <h2>Six jobs, not one</h2>
   <div class="scroll">
     <table>
       <thead><tr><th>Model</th><th>Size</th><th>What it does</th><th>Build</th></tr></thead>
@@ -739,54 +770,43 @@
   </div>
   <div class="bar"><div class="loc"><span>Models we own</span></div><div class="ren"><span>Rented</span></div></div>
   <p style="margin-top:14px">
-    A model you own answers in milliseconds, on your own network, for nothing.
-    That is not a saving. It is the difference between raising a ticket and
-    watching it happen.
+    The small ones answer in milliseconds on your own network, which is the
+    difference between raising a ticket and watching it happen. The heavy one
+    gets the problems that deserve it. Deciding which is which, on every
+    request, is the product.
   </p>
 </section>
 
 <section>
-  <span class="eyebrow">The other labs</span>
-  <h2>They're suppliers, not rivals</h2>
-  <p>
-    We are not racing anyone to build a better general model. We would lose, and
-    it isn't the business. We buy the frontier the way a manufacturer buys steel.
+  <span class="eyebrow">The model layer</span>
+  <h2>An AI for your AI</h2>
+  <p class="kick">
+    Jynx does not compete with a model. It conducts them.
   </p>
   <p>
-    When a lab ships something better next quarter, our hard tail gets cheaper
-    and smarter and we did nothing. Every open-weight release makes our mesh
-    stronger for free. <strong>Their progress is our margin.</strong>
-  </p>
-  <div class="pull">
-    <p>Every escalation to a frontier model is a labeled example of exactly what our own models are weak at. We pay for the answer once and keep it forever.</p>
-  </div>
-</section>
-
-<section>
-  <span class="eyebrow">The code</span>
-  <h2>Written to be read by people</h2>
-  <p>
-    There is a failure mode in this market that nobody selling into it wants to
-    name: a year of generated code that works, that nobody has read, and that no
-    one on the team can safely change. It passes review because it looks
-    plausible. It compounds because it is fast. And then something breaks and
-    the company discovers it owns a codebase it cannot reason about.
+    A request arrives and something has to decide what kind of work it is, which
+    files it touches, who owns them, what has been tried before, which
+    intelligence should do it, and whether the result is actually right. That
+    decision layer is the product, and it is model-agnostic by construction:
+    our own tuned models where speed and specificity win, a frontier model where
+    raw capability wins, a customer's own weights where the rules say nothing
+    leaves the building.
   </p>
   <div class="pull">
-    <p>Every change here carries the reasoning behind it, in a form the next person can argue with. Not a summary of what happened — why, and what was rejected.</p>
+    <p>Every model that ships makes the mesh stronger. We are the layer that decides which one you needed.</p>
   </div>
   <p>
-    That is enforced rather than encouraged. Layer boundaries are checked by a
-    machine on every commit. A rule nothing checks is a wish. Decisions are
-    recorded with the argument attached, because a decision without its
-    reasoning gets reversed by the next person who assumes it was arbitrary.
-    Anything irreversible has a human on it.
+    That is the position worth holding. A team that owns one model is betting on
+    that model. A team that owns the <strong>routing, the context and the
+    record of what worked</strong> gets better every time anybody releases
+    anything — and can put the best of all of them on one problem, which is not
+    a thing any single lab will ever sell you.
   </p>
   <p>
-    <strong>This is the standard we hold our own work to, and it is the standard
-    Jynx enforces on the work it does for you.</strong> A tool that produces code
-    faster than your team can read it has not made you faster. It has moved the
-    bill.
+    It runs the other way too. When a frontier model solves something ours could
+    not, that is a labelled example of exactly where we are weak — the most
+    valuable training data there is, produced as a by-product of doing the work.
+    We pay for the answer once and keep it.
   </p>
 </section>
 
@@ -882,6 +902,59 @@
     reason the foundation is shaped the way it is now rather than retrofitted
     later.
   </p>
+</section>
+
+<section>
+  <span class="eyebrow">The surfaces</span>
+  <h2>Same gesture, wherever you are</h2>
+  <p class="kick">
+    One kernel, one context graph, one loop. What changes is where you are
+    standing when you point at something.
+  </p>
+
+  <div class="surf">
+    <div class="s-card">
+      <div class="s-head"><span class="s-dot"></span><span class="s-dot"></span><span class="s-dot"></span>
+        <span class="s-file">Checkout.jsx</span></div>
+      <div class="s-body">
+        <div class="s-row"><span class="ln">41</span><code><em>const</em> total = items.reduce(sum, 0)</code></div>
+        <div class="s-row sel"><span class="ln">42</span><code>  <em>if</em> (total &gt; 0) applyDiscount(total)</code></div>
+        <div class="s-row sel"><span class="ln">43</span><code>  <em>return</em> format(total)</code></div>
+        <div class="s-row"><span class="ln">44</span><code>}</code></div>
+        <div class="s-pop">
+          <span class="w"><i></i><i></i> Jynx</span>
+          Discount applies before tax here and after it on the server.
+          <span class="s-meta">2 files · owner Ziv · 3 tests cover this</span>
+        </div>
+      </div>
+    </div>
+    <div class="s-note">
+      <h4>In the editor</h4>
+      <p>Select a chunk, say what is wrong with it. It already knows the file,
+      the owner, what changed there last week and which tests cover those lines
+      — so the comment goes out as work, not as a note to yourself.</p>
+    </div>
+
+    <div class="s-card">
+      <div class="s-bar"><span class="s-url">app.acme.com/pricing</span><span class="s-ext"><i></i><i></i></span></div>
+      <div class="s-body web">
+        <div class="s-h"></div>
+        <div class="s-line w1"></div><div class="s-line w2"></div>
+        <div class="s-btn hl">Start free trial</div>
+        <div class="s-pop right">
+          <span class="w"><i></i><i></i> Jynx</span>
+          This says trial, the pricing page says demo.
+          <span class="s-meta">button · PricingCta.tsx:18 · owner Design</span>
+        </div>
+      </div>
+    </div>
+    <div class="s-note">
+      <h4>In the browser</h4>
+      <p>An extension over any site your team runs — staging, production,
+      somebody else's dashboard. Support sees it break in front of a customer
+      and points at it. No repository, no editor, no ticket.</p>
+    </div>
+  </div>
 </section>
 
 <section>
@@ -1022,12 +1095,16 @@
       thousands of verified outcomes from inside one customer's codebase — and
       that is what makes month twelve better than month one.</p></div></div>
 
-  <div class="rk"><div class="q"><span class="eyebrow">03</span><p>Fine-tuning five models is a lot of surface for a small team.</p></div>
-    <div class="a"><h4>We build two. We adapt the rest.</h4>
-      <p>The locator and the verifier are ours because they train on data only we
-      have. Intent, planner and patcher start as open-weight models with our
-      context on top. Building all five in year one is over-scoping in a lab
-      coat.</p></div></div>
+  <div class="rk"><div class="q"><span class="eyebrow">03</span>
+      <p>What happens when a frontier lab releases something far better than anything you have tuned?</p></div>
+    <div class="a"><h4>We get better that afternoon, and we did nothing.</h4>
+      <p>Every release plugs into the same routing layer. A stronger model makes
+      our hard tail cheaper and sharper for free, and it produces more of the
+      labelled examples our own models learn from. There is no version of the
+      market improving that does not improve us.</p>
+      <p>The risk runs the other way for anyone whose product <em>is</em> a
+      model: they have to win every release. We have to pick well, which is a
+      much better position to defend.</p></div></div>
 
   <div class="rk"><div class="q"><span class="eyebrow">04</span><p>You need training data before you have customers.</p></div>
     <div class="a"><h4>Open repositories bootstrap it. Customers compound it.</h4>
@@ -2947,11 +3024,14 @@
     var WANT = [
       { find: "Everything else is distraction", author: "Ziv",  ago: "2h",
         text: "This is the line. Lead every deck with it." },
-      { find: "Six models. Five are ours",      author: "Yoav", ago: "5h",
+      { find: "Six jobs, not one",              author: "Yoav", ago: "5h",
         text: "Can we show cost per task next to each one? That is the number people ask about." },
       { find: "What has to be true",            author: "Ziv",  ago: "1d",
         text: "Year 2 assumes self-hosting is ready. Worth stating what that depends on." }
     ];
+    /* Seeds anchor by the text they are about, so a heading that gets reworded
+       silently loses its comment. Say so rather than shipping two pins where
+       three were intended. */
     var made = 0;
     WANT.forEach(function (w) {
       var el = Array.prototype.find.call(root.querySelectorAll("h1,h2,h3,p,li,td"), function (n) {
@@ -2963,6 +3043,9 @@
       made++;
     });
     if (made) { ls("jynx-seeded", "1"); save(); }
+    if (made < WANT.length && window.console) {
+      console.warn("[jynx] " + (WANT.length - made) + " seeded comment(s) found no anchor — a heading was reworded.");
+    }
   })();
   bump();
   if (!durable && warn) {
