@@ -907,7 +907,11 @@
   #jx-svg .shape:hover{fill-opacity:.3}
   body.jx-draw{cursor:crosshair}
   body.jx-area,body.jx-point,body.jx-link{cursor:crosshair}
-  body.jx-area,body.jx-draw{touch-action:none;overscroll-behavior:none}
+  /* Only the drawing surface owns the gesture. Putting touch-action:none on
+     the body meant that entering draw mode killed scrolling for the entire
+     page — you could not get to the thing you wanted to draw on. */
+  body.jx-area{touch-action:none;overscroll-behavior:none}
+  body.jx-draw #jx-svg{touch-action:none;pointer-events:auto}
 
   /* While the anchor is being moved, nothing animates — otherwise every
      reposition replays the fan and the whole thing shivers. */
@@ -939,17 +943,16 @@
     .jx-bar .jx-t svg{width:19px;height:19px}
     .jx-bar .jx-t .hk{display:none}
     .jx-bar .jx-t[aria-pressed="true"]{background:var(--c-jynx);border-color:var(--c-jynx);color:var(--c-ink)}
-    /* Four tools, close to the thumb. Six at 112px read as a constellation
-       floating away from the bubble; four at 76px read as attached to it.
-       Comments and the eye moved into the panel, which is where you are already
-       looking when you want them. */
-    .jx-bar .jx-t:nth-child(1){left:-76px; top:-7px}
-    .jx-bar .jx-t:nth-child(2){left:-59px; top:-48px}
-    .jx-bar .jx-t:nth-child(3){left:-22px; top:-73px}
-    .jx-bar .jx-t:nth-child(4){left:22px; top:-73px}
-    /* The fifth is the panel toggle, tucked under the bubble. */
-    .jx-bar .jx-t:nth-child(5){left:-4px; top:-96px}
-    .jx-bar .jx-t:nth-child(6){display:none}
+    /* Four tools on a phone. Area is a mouse gesture — dragging a box with a
+       thumb on a page you also want to scroll is a fight, and the same job is
+       done by pointing at the thing you meant. Close is the bubble itself.
+       Wider radius and fewer of them: a hand of cards, not a cluster. */
+    .jx-bar .jx-t[data-mode="area"]{display:none}
+    .jx-bar #jx-bar-close{display:none}
+    .jx-bar .jx-t.r1{left:-88px; top:-3px}
+    .jx-bar .jx-t.r2{left:-73px; top:-49px}
+    .jx-bar .jx-t.r3{left:-36px; top:-80px}
+    .jx-bar .jx-t.r4{left:12px; top:-87px}
 
     .jx-panel{left:0!important;right:auto;top:auto!important;bottom:0;
       width:var(--jx-vw, 100vw);max-width:none;border-radius:18px 18px 0 0;
@@ -1467,6 +1470,16 @@
 
       /* No animation while it is being placed — otherwise the fan replays on
          every reposition and the whole menu shivers as the page scrolls. */
+      /* nth-child cannot skip a hidden sibling, so the visible tools carry
+         their own ring position. */
+      var ring = 0;
+      Array.prototype.forEach.call(bar.querySelectorAll(".jx-t"), function (t) {
+        t.classList.remove("r1", "r2", "r3", "r4");
+        if (getComputedStyle(t).display === "none") return;
+        ring += 1;
+        if (ring <= 4) t.classList.add("r" + ring);
+      });
+
       bar.classList.add("settling");
       clearTimeout(bar._settle);
       bar._settle = setTimeout(function () { bar.classList.remove("settling"); }, 60);
@@ -1974,6 +1987,8 @@
 
   /* ---- modes ---- */
   function setMode(m) {
+    /* Area needs a pointer. On a phone the same job is done by pointing. */
+    if (m === "area" && cssWidth() <= 640) m = "point";
     mode = m;
     Array.prototype.forEach.call(bar.querySelectorAll(".jx-t[data-mode]"), function (b) {
       b.setAttribute("aria-pressed", String(b.dataset.mode === m));
