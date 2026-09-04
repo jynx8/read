@@ -1145,6 +1145,8 @@
        person can actually see — the browser's own toolbar. Without it the
        bubble renders behind that bar on every phone. */
     bottom:calc(20px + env(safe-area-inset-bottom) + var(--jx-lift, 0px));
+    /* Same correction sideways: keep it inside the width the person can see. */
+    margin-right:calc(100vw - var(--jx-vw, 100vw));
     display:flex;align-items:center;gap:9px;
     background:var(--c-bg);border:1.5px solid var(--c-jynx);
     border-radius:26px;padding:11px 17px;
@@ -1419,9 +1421,19 @@
   body.jx-area,body.jx-draw{touch-action:none;overscroll-behavior:none}
 
   @media (max-width:640px){
-    .jx-bar{left:8px!important;right:8px;width:auto;justify-content:space-between;gap:6px;padding:9px;border-radius:18px}
-    .jx-t{width:46px;height:46px}
-    .jx-panel{left:0!important;right:0;top:auto!important;bottom:0;width:100%;max-width:none;border-radius:18px 18px 0 0;
+    /* place() only positions the bar above 640px, so on a phone it needs real
+       offsets in CSS — without them position:fixed falls back to its static
+       spot, which is the very bottom of the document, and the toolbar is simply
+       not on screen. --jx-lift keeps it clear of the browser's own chrome. */
+    .jx-bar{left:8px!important;right:auto!important;
+      width:calc(var(--jx-vw, 100vw) - 16px)!important;
+      justify-content:space-between;gap:4px;padding:8px;border-radius:18px;
+      top:auto!important;bottom:calc(82px + env(safe-area-inset-bottom) + var(--jx-lift,0px))!important}
+    /* Six buttons have to fit the narrowest phone, so they share what is there
+       rather than each insisting on 46px and overflowing the screen. */
+    .jx-t{width:auto;flex:1 1 0;min-width:0;height:46px}
+    .jx-panel{left:0!important;right:auto;top:auto!important;bottom:0;
+      width:var(--jx-vw, 100vw);max-width:none;border-radius:18px 18px 0 0;
       border-left:none;border-right:none;border-bottom:none;padding-bottom:env(safe-area-inset-bottom)}
     .jx-list{max-height:32vh}
     .jx-ask{width:calc(100vw - 20px)}
@@ -1602,8 +1614,14 @@
     return Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
   }
   function liftChrome() {
-    var lift = chromeInset();
-    document.documentElement.style.setProperty("--jx-lift", lift + "px");
+    var vv = window.visualViewport;
+    document.documentElement.style.setProperty("--jx-lift", chromeInset() + "px");
+    /* The horizontal twin of the same problem: innerWidth is the LAYOUT
+       viewport (484 on a 390pt phone), so anything anchored left:8/right:8
+       renders 468 wide and its right-hand end is off the screen. CSS has no way
+       to ask for the visible width, so hand it over. */
+    document.documentElement.style.setProperty("--jx-vw", Math.round(vv ? vv.width : window.innerWidth) + "px");
+    document.documentElement.style.setProperty("--jx-vx", Math.round(vv ? vv.offsetLeft : 0) + "px");
     if (pinned) repin();
   }
   if (window.visualViewport) {
@@ -1875,6 +1893,15 @@
   fab.addEventListener("click", function (e) { e.preventDefault(); });
 
   /* Toolbar above the bubble, panel above that — both clamped. */
+  /* The width CSS is actually using. window.innerWidth is the LAYOUT viewport
+     on a phone and can exceed the breakpoint, which made place() take the
+     desktop path and write inline offsets that beat the media query — the
+     toolbar then sized to its content and ran off the side of the screen. */
+  function cssWidth() {
+    return (window.visualViewport && window.visualViewport.width)
+      || document.documentElement.clientWidth || window.innerWidth;
+  }
+
   function place() {
     var r = fab.getBoundingClientRect();
     if (pinned) {
@@ -1893,13 +1920,13 @@
       }
       return;
     }
-    if (!bar.hidden && window.innerWidth > 640) {
+    if (!bar.hidden && cssWidth() > 640) {
       var b = bar.getBoundingClientRect();
       bar.style.left = Math.min(Math.max(8, r.right - b.width), window.innerWidth - b.width - 8) + "px";
       bar.style.top = Math.max(8, r.top - b.height - 12) + "px";
       bar.style.right = "auto"; bar.style.bottom = "auto";
     }
-    if (!panel.hidden && window.innerWidth > 640) {
+    if (!panel.hidden && cssWidth() > 640) {
       var q = panel.getBoundingClientRect(), bh = bar.hidden ? 0 : bar.getBoundingClientRect().height + 12;
       panel.style.left = Math.min(Math.max(8, r.right - q.width), window.innerWidth - q.width - 8) + "px";
       panel.style.top = Math.max(8, r.top - bh - q.height - 12) + "px";
