@@ -953,6 +953,12 @@
     .jx-bar .jx-t.r2{left:-73px; top:-49px}
     .jx-bar .jx-t.r3{left:-36px; top:-80px}
     .jx-bar .jx-t.r4{left:12px; top:-87px}
+    /* Dragged to the left edge, a left-opening fan puts its far tool off the
+       screen. The arc mirrors instead of detaching from the bubble. */
+    .jx-bar.mirror .jx-t.r1{left:88px}
+    .jx-bar.mirror .jx-t.r2{left:73px}
+    .jx-bar.mirror .jx-t.r3{left:36px}
+    .jx-bar.mirror .jx-t.r4{left:-12px}
 
     .jx-panel{left:0!important;right:auto;top:auto!important;bottom:0;
       width:var(--jx-vw, 100vw);max-width:none;border-radius:18px 18px 0 0;
@@ -961,8 +967,14 @@
     .jx-list{max-height:32vh}
 
     .jx-ask{width:calc(var(--jx-vw, 100vw) - 20px)}
-
-    .jx-ask textarea{font-size:16px}
+    /* 16px is not a taste decision — anything smaller and iOS zooms the page
+       on focus, and a zoomed page pans sideways. Everything else tightens: the
+       composer was covering half the display. */
+    .jx-ask textarea{font-size:16px;min-height:42px;padding:9px 12px}
+    .jx-ask .hd{padding:8px 11px}
+    .jx-ask .ft{padding:7px 10px;gap:6px}
+    .jx-ask .ft button{padding:9px;font-size:13px}
+    .jx-ask .links{padding:0 11px 7px}
   }
   @media print{.jx-fab,.jx-bar,.jx-panel,.jx-pin,.jx-pop,.jx-marq,#jx-canvas,.jx-ask,.jx-hello{display:none!important}}
   @media (prefers-reduced-motion:reduce){.jx-fab,.jx-bar,.jx-panel,.jx-pin,.jx-pop,.jx-ask{animation:none!important;transition:none!important}}
@@ -1078,6 +1090,10 @@
   var sayTimer = null;
   function say(text, ms) {
     var el = $("jx-hello"); if (!el) return;
+    /* Two things speaking at once is the distraction the whole document is
+       about. While the composer is open Jynx is quiet — it still answers you
+       the moment you save, which is a reply rather than an interruption. */
+    if (!ask.hidden) return;
     clearTimeout(sayTimer);
     el.classList.remove("go");
     el.innerHTML = "";
@@ -1465,8 +1481,18 @@
          and made it look like a separate floating thing. */
       var vWide = document.documentElement.clientWidth || window.innerWidth;
       var vHigh = document.documentElement.clientHeight || window.innerHeight;
-      var ax = Math.min(Math.max(r.left + r.width / 2, 100), vWide - 34);
-      var ay = Math.min(Math.max(r.top + r.height / 2, 122), vHigh - 30);
+      var cx = r.left + r.width / 2;
+      /* The fan opens away from the nearest edge. Clamping a left-opening arc
+         when the bubble is already at the left edge does not save it — the far
+         tool is still off screen and the menu has detached from the bubble it
+         belongs to. Mirroring keeps both. Extents are the arc itself: 88 out
+         plus a 23px half-button one way, 12 plus 23 the other, 87 plus 23 up. */
+      var flip = cx < vWide * 0.42;
+      bar.classList.toggle("mirror", flip);
+      var ax = flip
+        ? Math.min(Math.max(cx, 35), vWide - 111)
+        : Math.min(Math.max(cx, 111), vWide - 35);
+      var ay = Math.min(Math.max(r.top + r.height / 2, 110), vHigh - 30);
 
       /* No animation while it is being placed — otherwise the fan replays on
          every reposition and the whole menu shivers as the page scrolls. */
@@ -1691,10 +1717,14 @@
 
     document.body.appendChild(pop);
     var vv2 = window.visualViewport;
-    var px0 = vv2 ? vv2.pageLeft : scrollX, py0 = vv2 ? vv2.pageTop : scrollY;
-    var pvw = vv2 ? vv2.width : window.innerWidth, pvh = vv2 ? vv2.height : window.innerHeight;
+    var py0 = vv2 ? vv2.pageTop : scrollY;
+    var pvh = vv2 ? vv2.height : window.innerHeight;
     var r = pop.getBoundingClientRect();
-    var x = Math.min(Math.max(px0 + 8, left - 8), px0 + pvw - r.width - 8);
+    /* Same rule as the composer: clamp horizontally against the document, not
+       against visualViewport.pageLeft. Anchoring an absolutely positioned box
+       to the pan offset lets it widen the document, which allows more pan. */
+    var pdw = document.documentElement.clientWidth;
+    var x = Math.min(Math.max(8, left - 8), pdw - r.width - 8);
     var y = top + 24;
     if (y + r.height > py0 + pvh - 8) y = Math.max(py0 + 8, top - r.height - 12);
     pop.style.left = x + "px"; pop.style.top = y + "px";
@@ -1703,7 +1733,7 @@
   }
 
   /* ---- compose ---- */
-  /* Anchored beside what you picked, never centerd over the page. The mission
+  /* Anchored beside what you picked, never centered over the page. The mission
      stays visible and stays scrollable; this is a note, not a destination. */
   function askFor(kind, subject, path, rect, elKind, at) {
     pending = { on: subject, path: path, rect: rect, links: [], kind: elKind || "AREA", at: at };
@@ -1735,15 +1765,23 @@
        on a phone and is wider than the screen, so clamping against it lets the
        composer sit off the right-hand edge where nobody can reach it. */
     var vv = window.visualViewport;
-    var x0 = vv ? vv.pageLeft : scrollX, y0 = vv ? vv.pageTop : scrollY;
+    var y0 = vv ? vv.pageTop : scrollY;
     var vw = vv ? vv.width : window.innerWidth, vh = vv ? vv.height : window.innerHeight;
     var r = ask.getBoundingClientRect();
+    /* The composer is positioned absolutely, so its left edge is a DOCUMENT
+       coordinate and it widens the document if it lands past the right edge.
+       This used to be anchored to visualViewport.pageLeft, which turned one
+       stray pixel of horizontal scroll into a runaway: placing it at pageLeft
+       widened the document, which allowed more pan, which moved pageLeft. Ten
+       seconds of that and the page is somewhere off to the left in the dark.
+       Clamp against the document instead — it cannot feed itself. */
+    var docW = document.documentElement.clientWidth;
     /* On a phone, being fully on screen beats being beside the exact pixel you
        touched — the box is nearly the width of the display either way, so
        anchoring horizontally buys nothing and can push it off the edge. */
     var x = vw <= 600
-      ? x0 + 10
-      : Math.min(Math.max(x0 + 10, a[0]), x0 + vw - r.width - 10);
+      ? 10
+      : Math.min(Math.max(10, a[0]), docW - r.width - 10);
     var y = a[1] + 12;
     if (y + r.height > y0 + vh - 10) y = Math.max(y0 + 10, a[1] - r.height - 12);
     ask.style.left = x + "px"; ask.style.top = y + "px";
@@ -1799,8 +1837,8 @@
     fab.classList.add("think");
     setTimeout(function () { fab.classList.remove("think"); }, 700);
     save(); render(); place(); pins();
-    say(nextLine(), 2600);
     ask.hidden = true; pending = null; clearMarq();
+    say(nextLine(), 2600);
   };
   ask.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
   document.addEventListener("pointerdown", function (e) {
@@ -2240,7 +2278,7 @@
     var WANT = [
       { find: "Everything else is distraction", author: "Ziv",  ago: "2h",
         text: "This is the line. Lead every deck with it." },
-      { find: "Six jobs, not one",              author: "Yoav", ago: "5h",
+      { find: "Six specialists, one workforce", author: "Yoav", ago: "5h",
         text: "Can we show cost per task next to each one? That is the number people ask about." },
       { find: "What has to be true",            author: "Ziv",  ago: "1d",
         text: "Year 2 assumes self-hosting is ready. Worth stating what that depends on." }

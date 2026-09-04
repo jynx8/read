@@ -57,6 +57,11 @@
   h2{font-size:clamp(31px,3.8vw,40px);letter-spacing:-.03em;line-height:1.06;margin-bottom:20px}
   .kick{color:var(--dim);font-size:18px;margin-bottom:26px;max-width:58ch}
 
+  .cite{border:1px solid var(--line);border-left:3px solid var(--jynx);background:var(--panel);
+    padding:18px 22px;margin:26px 0;max-width:62ch}
+  .cite p{font-size:15px;line-height:1.6;color:var(--dim);margin:0 0 .7em;max-width:none}
+  .cite .pt{margin:0;color:var(--text);font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:-.01em}
+
   .pull{border-left:3px solid var(--jynx);padding:2px 0 2px 24px;margin:28px 0}
   .pull p{font-family:var(--f-display);font-weight:600;font-size:21px;line-height:1.36;letter-spacing:-.016em;max-width:50ch;margin:0}
 
@@ -91,7 +96,7 @@
   th{font-family:var(--f-mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);font-weight:500;background:var(--raised);white-space:nowrap}
   tbody tr:last-child td{border-bottom:none}
   td.k{font-family:var(--f-mono);font-size:13px;font-weight:500;white-space:nowrap;color:var(--jynx)}
-  td.k.rent{color:var(--dim)}
+
 
   .bar{display:flex;height:42px;border:1px solid var(--line);overflow:hidden;margin-top:6px}
   .bar .loc{flex:0 0 70%;background:var(--jynx);display:flex;align-items:center;padding:0 18px}
@@ -554,28 +559,44 @@
 
 <section>
   <span class="eyebrow">The race</span>
-  <h2>We're not in it</h2>
+  <h2>Whichever ocean they're sailing, we're the port</h2>
   <p class="kick">
-    Everyone is watching the wrong scoreboard. Which lab is ahead this quarter
-    is a spectator sport, and it changes nothing about whether your support lead
-    can fix the sentence she reads forty times a week.
+    Everyone is watching the same scoreboard — which lab is ahead this quarter,
+    whose benchmark moved. It is a magnificent race and it settles nothing about
+    whether your support lead can fix the sentence she reads forty times a week.
   </p>
   <p>
-    We own our models because owned models are <em>better oriented</em>, not
-    because they are bigger. A small model that has seen ten thousand changes to
-    <em>your</em> codebase beats a frontier model seeing it for the first time,
-    at a hundredth of the cost, on your own network. Orientation beats
-    horsepower on the work Jynx actually does.
+    Ships do not compete with harbours. Every vessel that gets faster, cheaper
+    or bigger arrives at the same dock, and the dock takes a share of everything
+    that comes through it. We are not trying to out-sail anyone. We are the
+    place their cargo becomes useful.
+  </p>
+
+  <div class="cite">
+    <p><em>Blue Ocean Strategy</em> divides markets into <strong>red oceans</strong> —
+    existing space, fought over until the water turns red — and <strong>blue
+    oceans</strong>, uncontested space you create. The model labs are in the
+    reddest ocean in the history of technology, and they are winning it
+    magnificently.</p>
+    <p class="pt">A port is in neither. It profits from the traffic.</p>
+  </div>
+
+  <p>
+    We own our models because owned models are <strong>better oriented</strong>,
+    not because they are bigger. A small model that has seen ten thousand
+    changes to <em>your</em> codebase beats a frontier model seeing it for the
+    first time, at a fraction of the cost, on your own network. Orientation
+    beats horsepower on the work Jynx actually does — and where it does not, we
+    put the frontier on it and get the best of both.
   </p>
   <div class="pull">
     <p>The product is not the model. The product is the team, the context, and the graph that connects them.</p>
   </div>
   <p>
-    That graph is the thing nobody can buy, copy or catch up to. It is built out
-    of who owns what, what changed and why, what was tried and worked, and who
-    to ask when it didn't — accumulated inside one company, by the people who
-    work there, every day. The frontier labs are welcome to the race. We are
-    building the thing that makes their output useful.
+    That graph is the thing nobody can buy or catch up to. It is built out of
+    who owns what, what changed and why, what was tried and worked, and who to
+    ask when it didn't — accumulated inside one company, by the people who work
+    there, every day.
   </p>
 </section>
 
@@ -746,7 +767,7 @@
     <div class="layer"><div class="nm">kernel<small>the rules</small></div>
       <p><b>Every decision lives here.</b> Who may change what, how far agents may go, what a proposal is. One place, so it cannot disagree with itself.</p></div>
     <div class="layer"><div class="nm">mesh<small>the models</small></div>
-      <p><b>Where work is routed.</b> Classify, retrieve, plan, patch, verify — mostly on models we own, the hard tail rented.</p></div>
+      <p><b>Where work is routed.</b> Classify, retrieve, plan, patch, verify — our own tuned models, with the whole frontier on the bench.</p></div>
     <div class="layer"><div class="nm">runner<small>the rooms</small></div>
       <p><b>The security boundary.</b> Ephemeral containers, per-job credentials, egress allowlist. Built in-house because everything rests on it.</p></div>
   </div>
@@ -754,26 +775,28 @@
 
 <section>
   <span class="eyebrow">The mesh</span>
-  <h2>Six jobs, not one</h2>
+  <h2>Six specialists, one workforce</h2>
   <div class="scroll">
     <table>
-      <thead><tr><th>Model</th><th>Size</th><th>What it does</th><th>Build</th></tr></thead>
+      <thead><tr><th>Model</th><th>Size</th><th>What it does</th><th>Ours in</th></tr></thead>
       <tbody>
         <tr><td class="k">locator</td><td class="num">embed + rerank</td><td><strong>The crown jewel.</strong> A pointed-at element and a sentence in; the files that matter out.</td><td class="num">weeks</td></tr>
         <tr><td class="k">intent</td><td class="num">0.5–3B</td><td>What kind of work this is. Classification, and it decides everything downstream.</td><td class="num">days</td></tr>
         <tr><td class="k">planner</td><td class="num">7–8B</td><td>Steps and acceptance criteria, trained on our record of plans that worked and plans that didn't.</td><td class="num">weeks</td></tr>
         <tr><td class="k">patcher</td><td class="num">3–7B</td><td>The edit, for changes that are mechanical rather than clever. That's most real traffic.</td><td class="num">weeks</td></tr>
         <tr><td class="k">verifier</td><td class="num">3–7B</td><td>Did this do what was asked. Nobody else can build ours — it learns from our outcomes.</td><td class="num">weeks</td></tr>
-        <tr><td class="k rent">frontier</td><td class="num">rented</td><td>The hard tail. Rework this flow, migrate this pattern, change this schema.</td><td class="num">—</td></tr>
+        <tr><td class="k">frontier</td><td class="num">any, all</td><td>The hard tail, and the deep end of the bench. Rework this flow, migrate this pattern, change this schema.</td><td class="num">on tap</td></tr>
       </tbody>
     </table>
   </div>
-  <div class="bar"><div class="loc"><span>Models we own</span></div><div class="ren"><span>Rented</span></div></div>
+  <div class="bar"><div class="loc"><span>Trained by us, on your work</span></div><div class="ren"><span>Every frontier model, on tap</span></div></div>
   <p style="margin-top:14px">
-    The small ones answer in milliseconds on your own network, which is the
-    difference between raising a ticket and watching it happen. The heavy one
-    gets the problems that deserve it. Deciding which is which, on every
-    request, is the product.
+    We are training these. The small ones answer in milliseconds on your own
+    network — the difference between raising a ticket and watching it happen —
+    and every frontier model in the world is on the bench for the problems that
+    deserve one. Putting the right intelligence on every request, and the best
+    of all of them on the hard ones, is a thing no single lab will ever sell
+    you. That is the product.
   </p>
 </section>
 
@@ -781,7 +804,7 @@
   <span class="eyebrow">The model layer</span>
   <h2>An AI for your AI</h2>
   <p class="kick">
-    Jynx does not compete with a model. It conducts them.
+    Jynx does not compete with a model. It commands all of them.
   </p>
   <p>
     A request arrives and something has to decide what kind of work it is, which
@@ -1076,11 +1099,16 @@
 </section>
 
 <section>
-  <span class="eyebrow">Self-critique</span>
-  <h2>What could kill this</h2>
+  <span class="eyebrow">Objections</span>
+  <h2>The six questions, and why none of them land</h2>
+  <p class="kick">
+    These are the objections a serious person raises. I have spent longer on
+    them than you will need to ask them, so here they are with the answers
+    attached.
+  </p>
 
   <div class="rk"><div class="q"><span class="eyebrow">01</span><p>A frontier lab ships this on a Tuesday.</p></div>
-    <div class="a"><h4>They sell tokens. This installs in someone else's product.</h4>
+    <div class="a"><h4>They sell tokens. We ship execution.</h4>
       <p>Their surface is the developer's environment and it is winning. Ours is
       the customer's own running application — their design system, permissions,
       tenancy, compliance review. A services-shaped problem the labs keep
@@ -1090,29 +1118,41 @@
 
   <div class="rk"><div class="q"><span class="eyebrow">02</span><p>Routing between local and frontier models is the consensus design of 2026. Funded companies already ship it.</p></div>
     <div class="a"><h4>Routing is plumbing. The record is the asset.</h4>
-      <p>True, and I won't pretend otherwise in a room that knows it. Everyone
-      will have routing the way everyone has a database. Nobody else has
-      thousands of verified outcomes from inside one customer's codebase — and
-      that is what makes month twelve better than month one.</p></div></div>
+      <p>Everyone will have routing the way everyone has a database. Nobody else
+      has thousands of verified outcomes from inside one customer's codebase —
+      and that is what makes month twelve better than month one. Copy the
+      architecture in a quarter; you still start at zero.</p></div></div>
 
   <div class="rk"><div class="q"><span class="eyebrow">03</span>
-      <p>What happens when a frontier lab releases something far better than anything you have tuned?</p></div>
-    <div class="a"><h4>We get better that afternoon, and we did nothing.</h4>
-      <p>Every release plugs into the same routing layer. A stronger model makes
-      our hard tail cheaper and sharper for free, and it produces more of the
-      labelled examples our own models learn from. There is no version of the
-      market improving that does not improve us.</p>
+      <p>A frontier lab releases something far better than anything you have tuned.</p></div>
+    <div class="a"><h4>Good. We get better that afternoon, and we did nothing.</h4>
+      <p>Every release plugs into the same mesh. A stronger model makes our hard
+      tail cheaper and sharper for free, and it produces more of the labeled
+      examples our own models learn from. There is no version of the market
+      improving that does not improve us.</p>
       <p>The risk runs the other way for anyone whose product <em>is</em> a
-      model: they have to win every release. We have to pick well, which is a
-      much better position to defend.</p></div></div>
+      model: they have to win every release. We have to pick well, and we get to
+      put all of them on one problem — which is not a thing any single lab will
+      ever sell you.</p></div></div>
 
-  <div class="rk"><div class="q"><span class="eyebrow">04</span><p>You need training data before you have customers.</p></div>
-    <div class="a"><h4>Open repositories bootstrap it. Customers compound it.</h4>
+  <div class="rk"><div class="q"><span class="eyebrow">04</span><p>Six models is a lot of training for a small team.</p></div>
+    <div class="a"><h4>Five are small, and we are already training them.</h4>
+      <p>Nobody here is pretraining a frontier model, and nobody needs to. These
+      are fine-tunes on open weights against a record we own: classification at
+      0.5–3B is days, the 3–8B specialists are weeks each, on rented GPUs at
+      four figures. That is a scoped engineering plan with a timeline attached,
+      not a moonshot.</p>
+      <p>The hard part was never the training. It is having the labeled outcomes
+      to train on — and those arrive as a by-product of the product doing its
+      job, every day, in a customer's own repository.</p></div></div>
+
+  <div class="rk"><div class="q"><span class="eyebrow">05</span><p>You need training data before you have customers.</p></div>
+    <div class="a"><h4>Open repositories start it. Customers make it ours.</h4>
       <p>Public repositories with rich issue and pull-request histories are a
       legitimate cold start. Not as good as a customer's own record — good enough
       to begin, and the design partners turn it into the real thing.</p></div></div>
 
-  <div class="rk"><div class="q"><span class="eyebrow">05</span><p>Three people, pre-revenue, and the packaged product isn't finished.</p></div>
+  <div class="rk"><div class="q"><span class="eyebrow">06</span><p>Three people, pre-revenue, and the packaged product isn't finished.</p></div>
     <div class="a"><h4>The technology is at TRL 7. The packaging is the raise.</h4>
       <p>Everything around the execution layer exists: surface, context capture,
       queue, review, permissions, release path — with machine-enforced
@@ -1123,6 +1163,11 @@
       other companies install. That is the kind of risk money actually reduces,
       and it is a much better place to be than a polished product nobody has
       used in anger.</p></div></div>
+
+  <p style="margin-top:26px">
+    Every one of these gets better with scale, and none of them gets worse with
+    time. That is the shape I want to be underwriting.
+  </p>
 </section>
 
 <section>
@@ -1213,7 +1258,11 @@
       of work solved without renting intelligence — climbing every quarter, with
       paying customers watching it climb.
     </p>
-    <p style="margin:1.5em 0 0;font-family:var(--f-display);font-weight:700;font-size:clamp(20px,2.6vw,25px);letter-spacing:-.02em;color:var(--jynx)">
+    <p style="margin:1.9em 0 0;padding-top:1.4em;border-top:1px solid var(--line);color:var(--dim);font-size:15px">
+      This page was built with Jynx. The bubble in the corner is not a mockup of
+      anything — comment on this sentence and you have used the product.
+    </p>
+    <p style="margin:1.2em 0 0;font-family:var(--f-display);font-weight:700;font-size:clamp(20px,2.6vw,25px);letter-spacing:-.02em;color:var(--jynx)">
       Get efficient. Jynx it.
     </p>
   </div>
@@ -1752,6 +1801,12 @@
     .jx-bar .jx-t.r2{left:-73px; top:-49px}
     .jx-bar .jx-t.r3{left:-36px; top:-80px}
     .jx-bar .jx-t.r4{left:12px; top:-87px}
+    /* Dragged to the left edge, a left-opening fan puts its far tool off the
+       screen. The arc mirrors instead of detaching from the bubble. */
+    .jx-bar.mirror .jx-t.r1{left:88px}
+    .jx-bar.mirror .jx-t.r2{left:73px}
+    .jx-bar.mirror .jx-t.r3{left:36px}
+    .jx-bar.mirror .jx-t.r4{left:-12px}
 
     .jx-panel{left:0!important;right:auto;top:auto!important;bottom:0;
       width:var(--jx-vw, 100vw);max-width:none;border-radius:18px 18px 0 0;
@@ -1760,8 +1815,14 @@
     .jx-list{max-height:32vh}
 
     .jx-ask{width:calc(var(--jx-vw, 100vw) - 20px)}
-
-    .jx-ask textarea{font-size:16px}
+    /* 16px is not a taste decision — anything smaller and iOS zooms the page
+       on focus, and a zoomed page pans sideways. Everything else tightens: the
+       composer was covering half the display. */
+    .jx-ask textarea{font-size:16px;min-height:42px;padding:9px 12px}
+    .jx-ask .hd{padding:8px 11px}
+    .jx-ask .ft{padding:7px 10px;gap:6px}
+    .jx-ask .ft button{padding:9px;font-size:13px}
+    .jx-ask .links{padding:0 11px 7px}
   }
   @media print{.jx-fab,.jx-bar,.jx-panel,.jx-pin,.jx-pop,.jx-marq,#jx-canvas,.jx-ask,.jx-hello{display:none!important}}
   @media (prefers-reduced-motion:reduce){.jx-fab,.jx-bar,.jx-panel,.jx-pin,.jx-pop,.jx-ask{animation:none!important;transition:none!important}}
@@ -1877,6 +1938,10 @@
   var sayTimer = null;
   function say(text, ms) {
     var el = $("jx-hello"); if (!el) return;
+    /* Two things speaking at once is the distraction the whole document is
+       about. While the composer is open Jynx is quiet — it still answers you
+       the moment you save, which is a reply rather than an interruption. */
+    if (!ask.hidden) return;
     clearTimeout(sayTimer);
     el.classList.remove("go");
     el.innerHTML = "";
@@ -2264,8 +2329,18 @@
          and made it look like a separate floating thing. */
       var vWide = document.documentElement.clientWidth || window.innerWidth;
       var vHigh = document.documentElement.clientHeight || window.innerHeight;
-      var ax = Math.min(Math.max(r.left + r.width / 2, 100), vWide - 34);
-      var ay = Math.min(Math.max(r.top + r.height / 2, 122), vHigh - 30);
+      var cx = r.left + r.width / 2;
+      /* The fan opens away from the nearest edge. Clamping a left-opening arc
+         when the bubble is already at the left edge does not save it — the far
+         tool is still off screen and the menu has detached from the bubble it
+         belongs to. Mirroring keeps both. Extents are the arc itself: 88 out
+         plus a 23px half-button one way, 12 plus 23 the other, 87 plus 23 up. */
+      var flip = cx < vWide * 0.42;
+      bar.classList.toggle("mirror", flip);
+      var ax = flip
+        ? Math.min(Math.max(cx, 35), vWide - 111)
+        : Math.min(Math.max(cx, 111), vWide - 35);
+      var ay = Math.min(Math.max(r.top + r.height / 2, 110), vHigh - 30);
 
       /* No animation while it is being placed — otherwise the fan replays on
          every reposition and the whole menu shivers as the page scrolls. */
@@ -2490,10 +2565,14 @@
 
     document.body.appendChild(pop);
     var vv2 = window.visualViewport;
-    var px0 = vv2 ? vv2.pageLeft : scrollX, py0 = vv2 ? vv2.pageTop : scrollY;
-    var pvw = vv2 ? vv2.width : window.innerWidth, pvh = vv2 ? vv2.height : window.innerHeight;
+    var py0 = vv2 ? vv2.pageTop : scrollY;
+    var pvh = vv2 ? vv2.height : window.innerHeight;
     var r = pop.getBoundingClientRect();
-    var x = Math.min(Math.max(px0 + 8, left - 8), px0 + pvw - r.width - 8);
+    /* Same rule as the composer: clamp horizontally against the document, not
+       against visualViewport.pageLeft. Anchoring an absolutely positioned box
+       to the pan offset lets it widen the document, which allows more pan. */
+    var pdw = document.documentElement.clientWidth;
+    var x = Math.min(Math.max(8, left - 8), pdw - r.width - 8);
     var y = top + 24;
     if (y + r.height > py0 + pvh - 8) y = Math.max(py0 + 8, top - r.height - 12);
     pop.style.left = x + "px"; pop.style.top = y + "px";
@@ -2502,7 +2581,7 @@
   }
 
   /* ---- compose ---- */
-  /* Anchored beside what you picked, never centerd over the page. The mission
+  /* Anchored beside what you picked, never centered over the page. The mission
      stays visible and stays scrollable; this is a note, not a destination. */
   function askFor(kind, subject, path, rect, elKind, at) {
     pending = { on: subject, path: path, rect: rect, links: [], kind: elKind || "AREA", at: at };
@@ -2534,15 +2613,23 @@
        on a phone and is wider than the screen, so clamping against it lets the
        composer sit off the right-hand edge where nobody can reach it. */
     var vv = window.visualViewport;
-    var x0 = vv ? vv.pageLeft : scrollX, y0 = vv ? vv.pageTop : scrollY;
+    var y0 = vv ? vv.pageTop : scrollY;
     var vw = vv ? vv.width : window.innerWidth, vh = vv ? vv.height : window.innerHeight;
     var r = ask.getBoundingClientRect();
+    /* The composer is positioned absolutely, so its left edge is a DOCUMENT
+       coordinate and it widens the document if it lands past the right edge.
+       This used to be anchored to visualViewport.pageLeft, which turned one
+       stray pixel of horizontal scroll into a runaway: placing it at pageLeft
+       widened the document, which allowed more pan, which moved pageLeft. Ten
+       seconds of that and the page is somewhere off to the left in the dark.
+       Clamp against the document instead — it cannot feed itself. */
+    var docW = document.documentElement.clientWidth;
     /* On a phone, being fully on screen beats being beside the exact pixel you
        touched — the box is nearly the width of the display either way, so
        anchoring horizontally buys nothing and can push it off the edge. */
     var x = vw <= 600
-      ? x0 + 10
-      : Math.min(Math.max(x0 + 10, a[0]), x0 + vw - r.width - 10);
+      ? 10
+      : Math.min(Math.max(10, a[0]), docW - r.width - 10);
     var y = a[1] + 12;
     if (y + r.height > y0 + vh - 10) y = Math.max(y0 + 10, a[1] - r.height - 12);
     ask.style.left = x + "px"; ask.style.top = y + "px";
@@ -2598,8 +2685,8 @@
     fab.classList.add("think");
     setTimeout(function () { fab.classList.remove("think"); }, 700);
     save(); render(); place(); pins();
-    say(nextLine(), 2600);
     ask.hidden = true; pending = null; clearMarq();
+    say(nextLine(), 2600);
   };
   ask.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
   document.addEventListener("pointerdown", function (e) {
@@ -3039,7 +3126,7 @@
     var WANT = [
       { find: "Everything else is distraction", author: "Ziv",  ago: "2h",
         text: "This is the line. Lead every deck with it." },
-      { find: "Six jobs, not one",              author: "Yoav", ago: "5h",
+      { find: "Six specialists, one workforce", author: "Yoav", ago: "5h",
         text: "Can we show cost per task next to each one? That is the number people ask about." },
       { find: "What has to be true",            author: "Ziv",  ago: "1d",
         text: "Year 2 assumes self-hosting is ready. Worth stating what that depends on." }
