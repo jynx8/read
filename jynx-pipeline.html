@@ -280,8 +280,9 @@
           <li>Choose <strong>Open in Safari</strong> — or <strong>Save to
           Files</strong>, then open it from there.</li>
         </ol>
-        <p>Previews inside messaging apps don't run anything. A real browser tab
-        does. <span style="color:#9B82FF">Soon to be a native app ;)</span></p>
+        <p>Messaging previews run the styling but block the scripts — so Jynx
+        blinks at you and answers nothing. A real browser tab does both.
+        <span style="color:#9B82FF">Soon to be a native app ;)</span></p>
       </div>
     </details>
     <span class="jx-eyes"><i></i><i></i></span>
@@ -599,7 +600,16 @@
   @keyframes jxpop{0%,100%{transform:scale(1)}42%{transform:scale(1.14)}}
   .jx-lock{width:15px;height:15px;stroke:var(--c-jynx);fill:none;stroke-width:2}
   .jx-face{display:flex;gap:5px;align-items:center}
-  .jx-eye{width:6.5px;height:6.5px;border-radius:50%;background:var(--c-jynx);transition:transform .12s ease,height .08s ease}
+  .jx-eye{width:6.5px;height:6.5px;border-radius:50%;background:var(--c-jynx);
+    transition:transform .12s ease,height .08s ease;
+    /* A baseline blink in pure CSS. JavaScript replaces it with the moods —
+       doubles, squints, the look down the nose — but with scripts blocked the
+       face is still alive rather than a pair of dots. */
+    animation:jxidleblink 7s infinite}
+  .jx-eye:last-child{animation-delay:.06s}
+  .jx-fab.blink .jx-eye,.jx-fab.slow .jx-eye,.jx-fab.squint .jx-eye,
+  .jx-fab.wink .jx-eye,.jx-fab.nose .jx-eye,.jx-fab.think .jx-eye{animation:none}
+  @keyframes jxidleblink{0%,92%,100%{height:6.5px}94%{height:1.5px}96%{height:6.5px}97.5%{height:1.5px}99%{height:6.5px}}
   /* The blink vocabulary. Each is a real thing a face does. */
   .jx-fab.blink  .jx-eye{height:1.5px;border-radius:1px}
   .jx-fab.slow   .jx-eye{height:1.5px;border-radius:1px;transition:height .16s ease}
@@ -637,6 +647,10 @@
     color:#E7E9EC;
     filter:drop-shadow(0 0 1.5px rgba(0,0,0,.9));
   }
+  /* CSS drives the fly, so it still flies in a preview that blocks scripts —
+     which is most of them. 26s cycle, visible for about seven of it. The
+     JavaScript only adds the reactions: the squint, the tracking, the swat. */
+  .jx-fly{animation:jxflyloop 26s linear 6s infinite}
   .jx-fly.go{animation:jxfly 7.2s cubic-bezier(.4,.1,.6,.9) forwards}
   .jx-fly .body{position:absolute;inset:0;width:4px;height:4px;border-radius:50%;
     background:currentColor;opacity:.85;left:1.5px;top:1.5px}
@@ -645,6 +659,19 @@
   .jx-fly .w.l{left:-2px;transform-origin:right center;animation:jxwing .07s linear infinite}
   .jx-fly .w.r{right:-2px;transform-origin:left center;animation:jxwing .07s linear infinite reverse}
   @keyframes jxwing{0%{transform:rotate(-22deg) scaleX(.8)}100%{transform:rotate(24deg) scaleX(1)}}
+  @keyframes jxflyloop{
+    0%,71%   {opacity:0;  transform:translate(46px,-34px) scale(.7)}
+    73%      {opacity:1;  transform:translate(34px,-26px) scale(1)}
+    77%      {transform:translate(-6px,-31px)}
+    80%      {transform:translate(-26px,-8px)}
+    83%      {transform:translate(-11px,7px)}
+    86%      {transform:translate(-30px,-19px)}
+    89%      {transform:translate(2px,-25px)}
+    92%      {transform:translate(-14px,-3px)}
+    95%      {opacity:1;  transform:translate(6px,-16px)}
+    98%      {opacity:.7; transform:translate(44px,-40px) scale(.9)}
+    100%     {opacity:0;  transform:translate(84px,-72px) scale(.55)}
+  }
   @keyframes jxfly{
     0%   {opacity:0;  transform:translate(46px,-34px) scale(.7)}
     6%   {opacity:1;  transform:translate(34px,-26px) scale(1)}
