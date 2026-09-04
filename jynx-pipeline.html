@@ -906,29 +906,50 @@
   body.jx-area,body.jx-draw{touch-action:none;overscroll-behavior:none}
 
   @media (max-width:640px){
-    /* place() only positions the bar above 640px, so on a phone it needs real
-       offsets in CSS — without them position:fixed falls back to its static
-       spot, which is the very bottom of the document, and the toolbar is simply
-       not on screen. --jx-lift keeps it clear of the browser's own chrome. */
-    .jx-bar{left:8px!important;right:auto!important;
-      width:calc(var(--jx-vw, 100vw) - 16px)!important;
-      justify-content:space-between;gap:3px;padding:6px;border-radius:15px;
-      top:auto!important;bottom:calc(82px + env(safe-area-inset-bottom) + var(--jx-lift,0px))!important}
-    /* Six buttons have to fit the narrowest phone, so they share what is there
-       rather than each insisting on 46px and overflowing the screen. */
-    /* Smaller than a thumb target on purpose: this bar sits over somebody's
-       document, and a row of 46px blocks is the tool asking for the screen. */
-    .jx-t{width:auto;flex:1 1 0;min-width:0;height:38px;border-radius:10px}
-    .jx-t svg{width:17px;height:17px}
+    /* ---- the radial menu ----
+       A bar across the bottom of a phone is a strip of somebody else's screen,
+       and the thumb is already at the bubble. So the tools fan out AROUND it:
+       same buttons, no chrome, every one inside the arc a thumb already
+       travels. The bar stays on a laptop, where a pointer moves freely and a
+       row reads faster. */
+    /* No !important on the offsets: place() writes the bubble's centre into
+       the inline style, and an !important rule here would beat it — which is
+       how the whole fan ended up 26,000px down the page. */
+    .jx-bar{
+      right:auto;bottom:auto;
+      width:0!important;height:0;padding:0;background:none;border:none;box-shadow:none;
+      display:block;overflow:visible;animation:none;
+    }
+    .jx-bar .jx-t{
+      position:absolute;width:46px;height:46px;border-radius:14px;flex:none;
+      background:var(--c-bg);border:1px solid var(--c-line);
+      box-shadow:0 6px 18px rgba(0,0,0,.34);
+      transform:translate(-50%,-50%) scale(.4);opacity:0;
+      transition:transform .26s cubic-bezier(.2,.9,.3,1.35),opacity .18s ease,background .14s ease;
+    }
+    .jx-bar:not([hidden]) .jx-t{transform:translate(-50%,-50%) scale(1);opacity:1}
+    .jx-bar .jx-t svg{width:19px;height:19px}
+    .jx-bar .jx-t .hk{display:none}
+    .jx-bar .jx-t[aria-pressed="true"]{background:var(--c-jynx);border-color:var(--c-jynx);color:var(--c-ink)}
+    /* An arc from just below due-left round to just past vertical, radius 112 —
+       the sweep a thumb makes from a bottom-right bubble, and it keeps every
+       button clear of both screen edges. */
+    .jx-bar .jx-t:nth-child(1){left:-112px; top:10px; transition-delay:.01s}
+    .jx-bar .jx-t:nth-child(2){left:-107px; top:-33px; transition-delay:.02s}
+    .jx-bar .jx-t:nth-child(3){left:-87px; top:-70px; transition-delay:.03s}
+    .jx-bar .jx-t:nth-child(4){left:-54px; top:-98px; transition-delay:.04s}
+    .jx-bar .jx-t:nth-child(5){left:-14px; top:-111px; transition-delay:.05s}
+    .jx-bar .jx-t:nth-child(6){left:29px; top:-108px; transition-delay:.06s}
+
     .jx-panel{left:0!important;right:auto;top:auto!important;bottom:0;
       width:var(--jx-vw, 100vw);max-width:none;border-radius:18px 18px 0 0;
       border-left:none;border-right:none;border-bottom:none;padding-bottom:env(safe-area-inset-bottom)}
+
     .jx-list{max-height:32vh}
-    /* 100vw is the LAYOUT viewport on a phone — 484 on a 390pt screen — so a
-       composer sized from it runs off the edge. --jx-vw is what you can see. */
+
     .jx-ask{width:calc(var(--jx-vw, 100vw) - 20px)}
+
     .jx-ask textarea{font-size:16px}
-    .jx-t .hk{display:none}
   }
   @media print{.jx-fab,.jx-bar,.jx-panel,.jx-pin,.jx-pop,.jx-marq,#jx-canvas,.jx-ask,.jx-hello{display:none!important}}
   @media (prefers-reduced-motion:reduce){.jx-fab,.jx-bar,.jx-panel,.jx-pin,.jx-pop,.jx-ask{animation:none!important;transition:none!important}}
@@ -1409,6 +1430,32 @@
         panel.style.right = "auto"; panel.style.bottom = "auto";
       }
       return;
+    }
+    /* On a phone the toolbar is a zero-size anchor at the middle of the bubble
+       and the buttons orbit it, so it is placed on the bubble rather than above
+       it. Everywhere else it is a bar sitting over the bubble. */
+    if (!bar.hidden && cssWidth() <= 640) {
+      /* The fan is CSS-positioned around this anchor, so the anchor has to sit
+         where the buttons can all land. The bubble's own rect is in LAYOUT
+         coordinates, which on a phone is wider than the screen — so clamp the
+         anchor into the visible band before using it, or the far end of the arc
+         is somewhere nobody can reach. Extents come from the arc itself:
+         112 + 23 to the left, 29 + 23 to the right, 111 + 23 up. */
+      /* documentElement.clientWidth is the CSS viewport — the same number the
+         media query above is testing. visualViewport.offsetLeft is the honest
+         choice in theory and reports a spurious 74 under emulation, which moved
+         the whole arc off the edge; the CSS viewport agrees with the layout in
+         every case that matters. */
+      var vWide = document.documentElement.clientWidth || window.innerWidth;
+      var vHigh = document.documentElement.clientHeight || window.innerHeight;
+
+      var ax = Math.min(Math.max(r.left + r.width / 2, 139), vWide - 56);
+      var ay = Math.min(Math.max(r.top + r.height / 2, 138), vHigh - 40);
+
+      bar.style.position = pinned ? "absolute" : "fixed";
+      bar.style.left = (ax + (pinned ? scrollX : 0)) + "px";
+      bar.style.top = (ay + (pinned ? scrollY : 0)) + "px";
+      bar.style.right = "auto"; bar.style.bottom = "auto";
     }
     if (!bar.hidden && cssWidth() > 640) {
       var b = bar.getBoundingClientRect();

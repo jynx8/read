@@ -104,6 +104,46 @@
   .grow .w{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--jynx)}
   .grow p{margin:0;font-size:14.5px;max-width:none}
 
+  /* ---- the phone concept ---- */
+  .phone{display:grid;grid-template-columns:196px 1fr;gap:30px;align-items:start;margin:28px 0 24px}
+  .ph-frame{position:relative;border:2px solid var(--line);border-radius:26px;padding:7px;background:#0B0D0F;box-shadow:0 12px 34px rgba(0,0,0,.22)}
+  .ph-notch{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:78px;height:20px;border-radius:11px;background:#000;z-index:3;display:flex;align-items:center;justify-content:center}
+  .ph-eyes{display:flex;gap:4px}
+  .ph-eyes i{width:5px;height:5px;border-radius:50%;background:var(--jynx);animation:phblink 5s infinite}
+  .ph-eyes i:last-child{animation-delay:.08s}
+  @keyframes phblink{0%,93%,100%{height:5px}95%{height:1px}}
+  .ph-screen{position:relative;height:320px;border-radius:20px;background:#101317;overflow:hidden;padding:34px 12px 12px}
+  .ph-app{font-family:var(--f-mono);font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;color:#4C555D;margin-bottom:10px}
+  .ph-line{height:6px;border-radius:3px;background:#1C2126;margin-bottom:7px}
+  .ph-line.w1{width:86%} .ph-line.w2{width:66%} .ph-line.w3{width:74%}
+  .ph-card{height:52px;border-radius:8px;background:#171B20;margin:11px 0}
+  .ph-fan{position:absolute;right:16px;bottom:16px;width:0;height:0}
+  .ph-bub{position:absolute;right:-14px;bottom:-14px;width:30px;height:30px;border-radius:16px;background:#0F1214;border:1.5px solid var(--jynx);display:flex;align-items:center;justify-content:center;gap:3.5px;box-shadow:0 4px 12px rgba(0,0,0,.5)}
+  .ph-bub i{width:4.5px;height:4.5px;border-radius:50%;background:var(--jynx)}
+  .ph-t{position:absolute;width:25px;height:25px;border-radius:8px;background:#0F1214;border:1px solid #2B3138;color:var(--jynx);
+    display:flex;align-items:center;justify-content:center;font-size:11px;
+    /* Precomputed rather than calc(cos()) — CSS trig is too recent to rely on
+       in a document that has to render in a messaging preview. */}
+  .ph-t:nth-child(1){left:-74px;top:-7px}
+  .ph-t:nth-child(2){left:-71px;top:-30px}
+  .ph-t:nth-child(3){left:-60px;top:-51px}
+  .ph-t:nth-child(4){left:-42px;top:-66px}
+  .ph-t:nth-child(5){left:-20px;top:-74px}
+  .ph-note h4{font-size:15.5px;margin:0 0 5px}
+  .ph-note h4 + p{font-size:14.5px;color:var(--dim);margin-bottom:16px;max-width:none}
+  .chat{display:flex;flex-direction:column;gap:9px;margin:24px 0;max-width:58ch}
+  .msg{font-size:14.5px;line-height:1.5;padding:11px 14px;border-radius:14px}
+  .msg.jynx{background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:5px}
+  .msg.me{background:var(--jynx);color:#fff;align-self:flex-end;border-bottom-right-radius:5px;max-width:70%}
+  .msg .who{display:flex;align-items:center;gap:4px;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--jynx);margin-bottom:6px}
+  .msg .who i{width:4.5px;height:4.5px;border-radius:50%;background:var(--jynx)}
+  .shortcut{display:inline-flex;align-items:center;gap:8px;margin:9px 0 4px;padding:7px 12px;border:1px solid var(--jynx);border-radius:10px;font-size:13.5px;font-weight:600}
+  .shortcut b{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--jynx);color:#fff;font-family:var(--f-mono);font-size:9.5px}
+  @media (max-width:620px){
+    .phone{grid-template-columns:1fr;gap:22px}
+    .ph-frame{max-width:210px;margin:0 auto}
+  }
+
   .figure{border:1px solid var(--line);background:var(--panel);padding:24px;margin:26px 0;overflow-x:auto}
 
   /* The context graph reads as an instrument display, so it stays dark in both
@@ -121,8 +161,27 @@
   .nn-r b{font-family:var(--f-mono);font-size:17px;font-weight:500;color:#9B82FF;letter-spacing:-.02em}
   .nn-r span{font-family:var(--f-mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.42)}
   .nn-ft{position:absolute;left:22px;bottom:18px;font-family:var(--f-mono);font-size:9px;letter-spacing:.16em;color:rgba(255,255,255,.34)}
-  @media (max-width:620px){.nn{aspect-ratio:4/3}.nn-hud{left:14px;top:14px}.nn-tag{font-size:8.5px}}
+  @media (max-width:620px){
+    /* On a phone the tags and the HUD land on top of each other and the whole
+       thing reads as noise. Keep the network and the hub, drop the annotation —
+       the picture is the argument, the labels were the detail. */
+    .nn{aspect-ratio:1/1;min-height:300px}
+    .nn-hud{left:14px;top:14px;gap:6px}
+    .nn-r b{font-size:15px}
+    .nn-r span{font-size:8px;letter-spacing:.08em}
+    .nn-tag{display:none}
+    .nn-tag.on{display:block;font-size:8px;padding:1.5px 5px}
+    .nn-ft{left:14px;bottom:12px;font-size:7.5px;letter-spacing:.1em}
+  }
   .figure svg{display:block;width:100%;height:auto;min-width:540px}
+  @media (max-width:620px){
+    /* It was 540px wide inside a 358px column, so the right-hand quadrant —
+       the one labelled DON'T — was simply off the screen. Let it scale. */
+    .figure{padding:14px}
+    .figure svg{min-width:0}
+    .key{grid-template-columns:1fr 1fr;gap:14px}
+    .key ol{font-size:12px;padding-left:16px}
+  }
   .cap{font-size:13.5px;color:var(--dim);margin:16px 0 0;max-width:64ch}
 
   .key{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-top:20px}
@@ -391,10 +450,21 @@
   </p>
   <p>
     The alternative is the machinery every company over fifty people already
-    has: a ticket, a board, a triage call, three tools that sync badly, and a
-    fortnight in which the actual job quietly becomes <em>explaining why this
-    one is not mine</em>. Nobody chose that. It accumulated. And every layer of
-    it was added by someone reasonable solving a real problem.
+    owns and nobody chose: a tracker, a board, a CRM, a service desk, a chat
+    tool with the real decisions in it, a documentation site three months stale,
+    and an integration between each pair that breaks quietly. Every layer was
+    added by someone reasonable solving a real problem. Together they are a
+    pipeline whose whole output is <em>tickets describing work</em>, and a
+    fortnight in which the job quietly becomes <em>explaining why this one is
+    not mine</em>.
+  </p>
+  <p>
+    None of that is a developer problem. Support writes the ticket, design
+    writes the ticket, sales escalates the ticket, and an operations lead spends
+    their week moving cards between columns that describe the work rather than
+    doing it. <strong>The people worst served by that machinery are the ones who
+    do not write code</strong> — they are furthest from the fix and have the
+    most hops to wait through.
   </p>
   <div class="pull">
     <p>The mission became the ticket. Then the ticket became the job. Jynx deletes the middle: see it, say it, it is fixed.</p>
@@ -808,6 +878,75 @@
     The last two are not on the roadmap I am asking you to fund. They are the
     reason the foundation is shaped the way it is now rather than retrofitted
     later.
+  </p>
+</section>
+
+<section>
+  <span class="eyebrow">The phone</span>
+  <h2>It lives in the corner of your screen</h2>
+  <p class="kick">
+    Not an app you open. A bubble that sits on top of whatever you are already
+    looking at, gets out of the way, and knows what you are pointing at.
+  </p>
+
+  <div class="phone">
+    <div class="ph-frame">
+      <div class="ph-notch"><span class="ph-eyes"><i></i><i></i></span></div>
+      <div class="ph-screen">
+        <div class="ph-app">Your app</div>
+        <div class="ph-line w1"></div><div class="ph-line w2"></div><div class="ph-line w3"></div>
+        <div class="ph-card"></div>
+        <div class="ph-line w2"></div><div class="ph-line w1"></div>
+        <div class="ph-fan">
+          <span class="ph-t">◎</span>
+          <span class="ph-t">▭</span>
+          <span class="ph-t">✎</span>
+          <span class="ph-t">◉</span>
+          <span class="ph-t">⌂</span>
+          <span class="ph-bub"><i></i><i></i></span>
+        </div>
+      </div>
+    </div>
+    <div class="ph-note">
+      <h4>Docked, not launched</h4>
+      <p>Drag it anywhere — the corner, the edge, into the notch, where it
+      becomes two eyes on hardware that was doing nothing. Bind it to the action
+      button and it is one press from anywhere on the phone.</p>
+      <h4>The menu comes to your thumb</h4>
+      <p>Tools fan around the bubble instead of stretching across the bottom of
+      somebody's screen. Everything inside the arc a thumb already travels. On a
+      laptop it is a row, because a pointer moves differently.</p>
+      <h4>It watches what you actually use</h4>
+      <p>And offers to build for it. That is the part that stops being a tool
+      and starts being a teammate.</p>
+    </div>
+  </div>
+
+  <div class="chat">
+    <div class="msg jynx">
+      <span class="who"><i></i><i></i> Jynx</span>
+      You've opened three apps this week I have no tools for. Want me to make
+      some? I could put your gate on the bubble — one tap, no app, no PIN.
+    </div>
+    <div class="msg me">Yeah, do the gate.</div>
+    <div class="msg jynx">
+      <span class="who"><i></i><i></i> Jynx</span>
+      Done. It's on the menu now.
+      <span class="shortcut"><b>PG</b> Open gate</span>
+      Anything you do twice, I'll offer to make once.
+    </div>
+  </div>
+
+  <p>
+    A shortcut is a <strong>skill</strong> — the same object a team writes for
+    its own product, built here from what one person repeatedly does. Nothing in
+    that flow is specific to code, which is the point: the bubble that fixes a
+    button in your product is the bubble that opens your gate, and it is the same
+    loop underneath. Point, say what you want, it happens.
+  </p>
+  <p style="color:var(--dim);font-size:14.5px">
+    Native app on iOS and Android — the browser overlay is how it ships first,
+    not where it stops.
   </p>
 </section>
 
@@ -1486,29 +1625,50 @@
   body.jx-area,body.jx-draw{touch-action:none;overscroll-behavior:none}
 
   @media (max-width:640px){
-    /* place() only positions the bar above 640px, so on a phone it needs real
-       offsets in CSS — without them position:fixed falls back to its static
-       spot, which is the very bottom of the document, and the toolbar is simply
-       not on screen. --jx-lift keeps it clear of the browser's own chrome. */
-    .jx-bar{left:8px!important;right:auto!important;
-      width:calc(var(--jx-vw, 100vw) - 16px)!important;
-      justify-content:space-between;gap:3px;padding:6px;border-radius:15px;
-      top:auto!important;bottom:calc(82px + env(safe-area-inset-bottom) + var(--jx-lift,0px))!important}
-    /* Six buttons have to fit the narrowest phone, so they share what is there
-       rather than each insisting on 46px and overflowing the screen. */
-    /* Smaller than a thumb target on purpose: this bar sits over somebody's
-       document, and a row of 46px blocks is the tool asking for the screen. */
-    .jx-t{width:auto;flex:1 1 0;min-width:0;height:38px;border-radius:10px}
-    .jx-t svg{width:17px;height:17px}
+    /* ---- the radial menu ----
+       A bar across the bottom of a phone is a strip of somebody else's screen,
+       and the thumb is already at the bubble. So the tools fan out AROUND it:
+       same buttons, no chrome, every one inside the arc a thumb already
+       travels. The bar stays on a laptop, where a pointer moves freely and a
+       row reads faster. */
+    /* No !important on the offsets: place() writes the bubble's centre into
+       the inline style, and an !important rule here would beat it — which is
+       how the whole fan ended up 26,000px down the page. */
+    .jx-bar{
+      right:auto;bottom:auto;
+      width:0!important;height:0;padding:0;background:none;border:none;box-shadow:none;
+      display:block;overflow:visible;animation:none;
+    }
+    .jx-bar .jx-t{
+      position:absolute;width:46px;height:46px;border-radius:14px;flex:none;
+      background:var(--c-bg);border:1px solid var(--c-line);
+      box-shadow:0 6px 18px rgba(0,0,0,.34);
+      transform:translate(-50%,-50%) scale(.4);opacity:0;
+      transition:transform .26s cubic-bezier(.2,.9,.3,1.35),opacity .18s ease,background .14s ease;
+    }
+    .jx-bar:not([hidden]) .jx-t{transform:translate(-50%,-50%) scale(1);opacity:1}
+    .jx-bar .jx-t svg{width:19px;height:19px}
+    .jx-bar .jx-t .hk{display:none}
+    .jx-bar .jx-t[aria-pressed="true"]{background:var(--c-jynx);border-color:var(--c-jynx);color:var(--c-ink)}
+    /* An arc from just below due-left round to just past vertical, radius 112 —
+       the sweep a thumb makes from a bottom-right bubble, and it keeps every
+       button clear of both screen edges. */
+    .jx-bar .jx-t:nth-child(1){left:-112px; top:10px; transition-delay:.01s}
+    .jx-bar .jx-t:nth-child(2){left:-107px; top:-33px; transition-delay:.02s}
+    .jx-bar .jx-t:nth-child(3){left:-87px; top:-70px; transition-delay:.03s}
+    .jx-bar .jx-t:nth-child(4){left:-54px; top:-98px; transition-delay:.04s}
+    .jx-bar .jx-t:nth-child(5){left:-14px; top:-111px; transition-delay:.05s}
+    .jx-bar .jx-t:nth-child(6){left:29px; top:-108px; transition-delay:.06s}
+
     .jx-panel{left:0!important;right:auto;top:auto!important;bottom:0;
       width:var(--jx-vw, 100vw);max-width:none;border-radius:18px 18px 0 0;
       border-left:none;border-right:none;border-bottom:none;padding-bottom:env(safe-area-inset-bottom)}
+
     .jx-list{max-height:32vh}
-    /* 100vw is the LAYOUT viewport on a phone — 484 on a 390pt screen — so a
-       composer sized from it runs off the edge. --jx-vw is what you can see. */
+
     .jx-ask{width:calc(var(--jx-vw, 100vw) - 20px)}
+
     .jx-ask textarea{font-size:16px}
-    .jx-t .hk{display:none}
   }
   @media print{.jx-fab,.jx-bar,.jx-panel,.jx-pin,.jx-pop,.jx-marq,#jx-canvas,.jx-ask,.jx-hello{display:none!important}}
   @media (prefers-reduced-motion:reduce){.jx-fab,.jx-bar,.jx-panel,.jx-pin,.jx-pop,.jx-ask{animation:none!important;transition:none!important}}
@@ -1989,6 +2149,32 @@
         panel.style.right = "auto"; panel.style.bottom = "auto";
       }
       return;
+    }
+    /* On a phone the toolbar is a zero-size anchor at the middle of the bubble
+       and the buttons orbit it, so it is placed on the bubble rather than above
+       it. Everywhere else it is a bar sitting over the bubble. */
+    if (!bar.hidden && cssWidth() <= 640) {
+      /* The fan is CSS-positioned around this anchor, so the anchor has to sit
+         where the buttons can all land. The bubble's own rect is in LAYOUT
+         coordinates, which on a phone is wider than the screen — so clamp the
+         anchor into the visible band before using it, or the far end of the arc
+         is somewhere nobody can reach. Extents come from the arc itself:
+         112 + 23 to the left, 29 + 23 to the right, 111 + 23 up. */
+      /* documentElement.clientWidth is the CSS viewport — the same number the
+         media query above is testing. visualViewport.offsetLeft is the honest
+         choice in theory and reports a spurious 74 under emulation, which moved
+         the whole arc off the edge; the CSS viewport agrees with the layout in
+         every case that matters. */
+      var vWide = document.documentElement.clientWidth || window.innerWidth;
+      var vHigh = document.documentElement.clientHeight || window.innerHeight;
+
+      var ax = Math.min(Math.max(r.left + r.width / 2, 139), vWide - 56);
+      var ay = Math.min(Math.max(r.top + r.height / 2, 138), vHigh - 40);
+
+      bar.style.position = pinned ? "absolute" : "fixed";
+      bar.style.left = (ax + (pinned ? scrollX : 0)) + "px";
+      bar.style.top = (ay + (pinned ? scrollY : 0)) + "px";
+      bar.style.right = "auto"; bar.style.bottom = "auto";
     }
     if (!bar.hidden && cssWidth() > 640) {
       var b = bar.getBoundingClientRect();
