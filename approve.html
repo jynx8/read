@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Jynx — approve</title>
+<!--
+  The approval page.
+
+  Everything it needs arrives in the URL FRAGMENT, which a browser never sends
+  to the server. GitHub Pages therefore serves this file having no idea what is
+  being approved, by whom, or for what — it is a static page that learns
+  everything from the link that opened it.
+
+  It never sends the PIN. It derives PBKDF2(pin, salt) with Web Crypto and posts
+  HMAC(that, requestId). Anyone watching the channel sees a proof bound to one
+  request: it cannot be run backwards to the PIN and cannot approve anything
+  else. That is why a single, ordinary notification channel is enough, and why
+  this is one tap instead of a second subscription.
+-->
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg:#F4F5F7; --panel:#fff; --ink:#0B0D12; --dim:#5B6272; --line:#E1E4EA;
+    --jynx:#7C5CFC; --lilac:#9B82FF; --ok:#16A34A; --bad:#DC2626;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --body:"Assistant",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#05070A; --panel:#12151C; --ink:#F2F4F8; --dim:#98A0B0; --line:#242A36;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);
+    min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;
+    width:100%;max-width:420px;padding:26px 22px;box-shadow:0 18px 50px rgba(0,0,0,.10)}
+  .mark{display:flex;align-items:center;gap:9px;margin-bottom:22px}
+  .eyes{display:flex;gap:5px}
+  .eyes i{width:7px;height:7px;border-radius:50%;background:var(--jynx)}
+  .mark b{font-family:var(--mono);font-size:12px;letter-spacing:.22em;color:var(--dim);font-weight:500}
+  .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:7px}
+  h1{font-size:21px;line-height:1.32;margin:0 0 14px;letter-spacing:-.01em;font-weight:700}
+  .why{font-size:14.5px;line-height:1.6;color:var(--dim);margin:0 0 16px}
+  .run{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--line);
+    border-radius:9px;padding:10px 12px;margin:0 0 16px;overflow-x:auto;white-space:pre;color:var(--ink)}
+  .from{font-family:var(--mono);font-size:11px;color:var(--dim);margin:0 0 22px;
+    padding-top:14px;border-top:1px solid var(--line)}
+  input{width:100%;font-family:var(--mono);font-size:22px;letter-spacing:.5em;text-align:center;
+    padding:15px 12px;border:1px solid var(--line);border-radius:11px;background:var(--bg);
+    color:var(--ink);outline:none;-webkit-appearance:none}
+  input:focus{border-color:var(--jynx)}
+  .row{display:flex;gap:9px;margin-top:14px}
+  button{flex:1;padding:15px;border-radius:11px;border:1px solid var(--line);cursor:pointer;
+    font-family:var(--body);font-weight:700;font-size:15px;background:transparent;color:var(--dim);
+    min-height:52px;-webkit-appearance:none}
+  button.go{background:var(--jynx);border-color:var(--jynx);color:#fff}
+  button:disabled{opacity:.45}
+  .msg{margin-top:16px;font-size:14px;line-height:1.5;text-align:center;min-height:20px}
+  .msg.ok{color:var(--ok)} .msg.bad{color:var(--bad)}
+  .note{margin-top:18px;font-family:var(--mono);font-size:10px;line-height:1.6;color:var(--dim);text-align:center}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="mark"><span class="eyes"><i></i><i></i></span><b>JYNX</b></div>
+  <div id="load">
+    <div class="lbl">Approval</div>
+    <h1 id="what">Loading…</h1>
+    <p class="why" id="why" hidden></p>
+    <pre class="run" id="run" hidden></pre>
+    <p class="from" id="from"></p>
+    <div class="lbl">Your PIN</div>
+    <input id="pin" type="tel" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="••••">
+    <div class="row">
+      <button id="deny">Deny</button>
+      <button id="ok" class="go">Approve</button>
+    </div>
+    <div class="msg" id="msg"></div>
+    <p class="note">Your PIN is never sent. This page derives a proof from it that
+      works only for this one request.</p>
+  </div>
+</div>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var msg = function (t, k) { var m = $("msg"); m.textContent = t; m.className = "msg" + (k ? " " + k : ""); };
+
+  var req = null;
+  try {
+    var raw = location.hash.slice(1);
+    if (!raw) throw new Error("no request in the link");
+    var pad = raw + "===".slice((raw.length + 3) % 4);
+    req = JSON.parse(decodeURIComponent(escape(atob(pad.replace(/-/g, "+").replace(/_/g, "/")))));
+  } catch (e) {
+    $("what").textContent = "This link is not a valid approval.";
+    $("load").querySelector(".lbl").textContent = "Nothing to do";
+    ["why","run","pin","msg"].forEach(function (i) { var el = $(i); if (el) el.hidden = true; });
+    $("deny").hidden = true; $("ok").hidden = true;
+    return;
+  }
+
+  $("what").textContent = req.what;
+  if (req.why) { $("why").textContent = req.why; $("why").hidden = false; }
+  if (req.run) { $("run").textContent = req.run; $("run").hidden = false; }
+  $("from").textContent = "asked by " + req.from + " · request " + req.id;
+  document.title = "Approve — " + req.what;
+
+  var enc = new TextEncoder();
+  function hex(buf) {
+    return Array.prototype.map.call(new Uint8Array(buf), function (b) {
+      return ("0" + b.toString(16)).slice(-2);
+    }).join("");
+  }
+  function bytes(h) {
+    var out = new Uint8Array(h.length / 2);
+    for (var i = 0; i < out.length; i++) out[i] = parseInt(h.substr(i * 2, 2), 16);
+    return out;
+  }
+
+  /* PBKDF2 then HMAC — the same two steps the listener does, so the proof
+     matches without either side ever handling the other's secret. */
+  async function proof(pin) {
+    var base = await crypto.subtle.importKey("raw", enc.encode(pin), "PBKDF2", false, ["deriveBits"]);
+    var bits = await crypto.subtle.deriveBits(
+      { name: "PBKDF2", salt: bytes(req.salt), iterations: 210000, hash: "SHA-256" }, base, 256);
+    var key = await crypto.subtle.importKey("raw", bits, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    return hex(await crypto.subtle.sign("HMAC", key, enc.encode(req.id)));
+  }
+
+  async function send(body) {
+    var res = await fetch("https://ntfy.sh/" + req.topic, {
+      method: "POST",
+      headers: { Priority: "3", Tags: "lock" },
+      body: body,
+    });
+    if (!res.ok) throw new Error("could not reach the channel (" + res.status + ")");
+  }
+
+  function busy(on) { $("ok").disabled = on; $("deny").disabled = on; }
+
+  $("ok").addEventListener("click", async function () {
+    var pin = $("pin").value.trim();
+    if (!/^\d{4,12}$/.test(pin)) { msg("Enter your PIN.", "bad"); return; }
+    busy(true); msg("Checking…");
+    try {
+      await send("approve " + req.id + " " + await proof(pin));
+      msg("Approved. You can close this.", "ok");
+      $("pin").value = ""; $("pin").disabled = true;
+    } catch (e) {
+      msg(e.message, "bad"); busy(false);
+    }
+  });
+
+  $("deny").addEventListener("click", async function () {
+    busy(true); msg("Sending…");
+    try {
+      await send("deny " + req.id);
+      msg("Denied. Nothing will happen.", "ok");
+    } catch (e) { msg(e.message, "bad"); busy(false); }
+  });
+
+  $("pin").addEventListener("keydown", function (e) { if (e.key === "Enter") $("ok").click(); });
+  setTimeout(function () { $("pin").focus(); }, 250);
+})();
+</script>
+</body>
+</html>
