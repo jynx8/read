@@ -6,39 +6,51 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Jynx — invitation</title>
 <!--
-  The invitation page. One page, one person, one answer.
+  The invitation page. One link per person, one answer, changeable until an
+  hour before the meeting.
 
-  Same shape as approve.html and for the same reason: everything it needs
-  arrives in the URL FRAGMENT, which a browser never sends to a server. The
-  host serves this file knowing nothing about who was invited or to what.
+  Everything arrives in the URL FRAGMENT, which a browser never sends to a
+  server, so the published file knows nothing about who was invited to what.
 
-  NO PIN, DELIBERATELY. An approval decides something irreversible and is worth
-  a proof; an RSVP is not. Anyone holding a person's link can answer as that
-  person, and that is an acceptable trade for a page that opens with one tap and
-  asks for nothing. It is stated on the page rather than hidden.
+  WHY THE POST CARRIES NO CUSTOM HEADERS. The first version set Title, Tags
+  and Priority as headers, which makes the browser send a CORS preflight
+  before the real request. ntfy allows it, but a preflight is one more thing
+  between a tap and an answer and it is not needed: ntfy takes all of them as
+  query parameters, and a POST with a text/plain body and no custom headers is
+  a CORS *simple request* that goes straight out. Fewer moving parts in the
+  one interaction that has to work on somebody else's phone.
 
-  An answer may be changed. People's evenings change, and a form that refuses to
-  let somebody correct themselves just produces a wrong tally plus a text
-  message.
+  AND WHY FAILURES ARE ON THE PAGE. A button that silently does nothing is
+  unreportable — the person cannot tell you what went wrong because they were
+  shown nothing. Anything thrown here is caught and printed where they can
+  read it back to you.
+
+  NO PIN, DELIBERATELY. An approval decides something irreversible and is
+  worth a proof; an RSVP is not. Anyone holding a person's link can answer as
+  them, and the page says so rather than implying otherwise.
 -->
 <style>
   :root{
     color-scheme: light dark;
     --bg:#F4F5F7; --panel:#fff; --ink:#0B0D12; --dim:#5B6272; --line:#E1E4EA;
-    --jynx:#7C5CFC; --lilac:#9B82FF; --ok:#16A34A; --bad:#DC2626;
+    --jynx:#7C5CFC; --lilac:#9B82FF; --ok:#16A34A; --bad:#DC2626; --amber:#9C6A0B;
     --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
     --body:"Assistant",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       --bg:#05070A; --panel:#12151C; --ink:#F2F4F8; --dim:#98A0B0; --line:#242A36;
+      --jynx:#9B82FF; --ok:#3ECF8E; --bad:#E2574C; --amber:#E0A73E;
     }
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);
-    min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px}
+    min-height:100dvh;display:flex;align-items:flex-start;justify-content:center;padding:20px}
+  .stack{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;margin:auto 0}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;
-    width:100%;max-width:420px;padding:26px 22px;box-shadow:0 18px 50px rgba(0,0,0,.10)}
+    padding:26px 22px;box-shadow:0 18px 50px rgba(0,0,0,.10)}
+  .card.slide{animation:slidein .42s cubic-bezier(.2,.9,.3,1.05) both}
+  @keyframes slidein{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
   .mark{display:flex;align-items:center;gap:9px;margin-bottom:22px}
   .eyes{display:flex;gap:5px}
   .eyes i{width:7px;height:7px;border-radius:50%;background:var(--jynx)}
@@ -47,49 +59,103 @@
   h1{font-size:22px;line-height:1.3;margin:0 0 6px;letter-spacing:-.01em;font-weight:700}
   .hi{font-size:15px;color:var(--jynx);font-weight:700;margin:0 0 12px}
   .why{font-size:14.5px;line-height:1.62;color:var(--dim);margin:0 0 18px}
-  .when{background:var(--bg);border:1px solid var(--line);border-radius:11px;
-    padding:14px 15px;margin:0 0 18px}
+  .when{background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:14px 15px;margin:0 0 18px}
   .when .big{font-size:17px;font-weight:700;letter-spacing:-.01em;margin-bottom:4px}
   .when .sub{font-family:var(--mono);font-size:11.5px;color:var(--dim);line-height:1.6}
-  .row{display:flex;gap:9px;margin-top:4px}
+  .row{display:flex;gap:9px}
   button{flex:1;padding:15px;border-radius:11px;border:1px solid var(--line);cursor:pointer;
     font-family:var(--body);font-weight:700;font-size:15px;background:transparent;color:var(--dim);
-    min-height:54px;-webkit-appearance:none}
+    min-height:54px;-webkit-appearance:none;transition:transform .12s ease}
+  button:active{transform:scale(.97)}
   button.go{background:var(--jynx);border-color:var(--jynx);color:#fff}
   button.no{color:var(--ink)}
   button:disabled{opacity:.45}
-  .msg{margin-top:16px;font-size:14px;line-height:1.5;text-align:center;min-height:20px}
-  .msg.ok{color:var(--ok)} .msg.bad{color:var(--bad)}
+  button.ghost{background:transparent;border-color:var(--line);color:var(--dim);font-size:13.5px;min-height:46px}
+  .msg{margin-top:14px;font-size:13.5px;line-height:1.5;text-align:center;min-height:18px;word-break:break-word}
+  .msg.bad{color:var(--bad)} .msg.ok{color:var(--ok)}
   .pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;
     letter-spacing:.1em;text-transform:uppercase;padding:5px 10px;border-radius:99px;border:1px solid var(--line)}
   .pill.ok{color:var(--ok);border-color:var(--ok)}
   .pill.bad{color:var(--bad);border-color:var(--bad)}
   .pill i{width:6px;height:6px;border-radius:50%;background:currentColor;display:block}
-  .done{text-align:center;padding:6px 0 2px}
-  .done h2{font-size:19px;margin:10px 0 8px;letter-spacing:-.01em}
-  .done p{font-size:14px;color:var(--dim);margin:0 0 16px;line-height:1.6}
   a.cal{display:block;text-align:center;padding:14px;border-radius:11px;border:1px solid var(--jynx);
-    color:var(--jynx);text-decoration:none;font-weight:700;font-size:14.5px;margin-bottom:10px}
-  a.again{display:block;text-align:center;font-family:var(--mono);font-size:11px;color:var(--dim);
-    text-decoration:underline;cursor:pointer;margin-top:4px}
-  .note{margin-top:18px;font-family:var(--mono);font-size:10px;line-height:1.6;color:var(--dim);text-align:center}
+    color:var(--jynx);text-decoration:none;font-weight:700;font-size:14.5px}
+  .note{margin-top:16px;font-family:var(--mono);font-size:10px;line-height:1.6;color:var(--dim);text-align:center}
+
+  /* ---- the Jynx bubble, same vocabulary as the product widget ----
+     Capsule, two eyes, and the blink states the character already has. It is
+     copied rather than reinvented so the thing on the invitation is the same
+     creature as the thing in the corner of the app. */
+  .jx{display:flex;align-items:center;gap:9px;background:var(--bg);
+    border:1.5px solid var(--jynx);border-radius:26px;padding:11px 17px;
+    width:max-content;margin:0 auto 16px}
+  .jx .e{width:6.5px;height:6.5px;border-radius:50%;background:var(--jynx);
+    display:block;transition:height .16s ease,transform .22s ease}
+  .jx .pair{display:flex;gap:7px;align-items:center;height:9px}
+  .jx .say{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.04em}
+  .jx.pop{animation:jxpop .45s cubic-bezier(.2,.9,.3,1.3)}
+  @keyframes jxpop{0%,100%{transform:scale(1)}42%{transform:scale(1.14)}}
+  /* yes — a squint, which is what a face does when it is pleased */
+  .jx.happy .e{height:3px;border-radius:2px}
+  .jx.happy .e:last-child{height:1.5px;border-radius:1px}
+  /* no — eyes down, the character's existing "nose" state */
+  .jx.down .e{height:3.5px;border-radius:2px}
+  .jx.down .e:first-child{transform:translate(1.6px,2.6px)}
+  .jx.down .e:last-child{transform:translate(-1.6px,2.6px)}
+  .jx.idle .e{animation:jxidle 7s infinite}
+  .jx.idle .e:last-child{animation-delay:.06s}
+  @keyframes jxidle{0%,92%,100%{height:6.5px}94%{height:1.5px}96%{height:6.5px}97.5%{height:1.5px}99%{height:6.5px}}
+  @media (prefers-reduced-motion: reduce){
+    .jx.pop,.jx.idle .e,.card.slide{animation:none}
+  }
+
+  /* ---- the roster ---- */
+  .who{display:flex;flex-direction:column;gap:2px;margin-top:4px}
+  .who .p{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line)}
+  .who .p:last-child{border-bottom:0}
+  .who .dot{width:8px;height:8px;border-radius:50%;background:var(--line);flex:none}
+  .who .dot.y{background:var(--ok)} .who .dot.n{background:var(--bad)}
+  .who .nm{font-weight:700;font-size:14.5px;flex:1}
+  .who .st{font-family:var(--mono);font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+  .who .p.me .nm{color:var(--jynx)}
+  .tot{display:flex;gap:14px;margin-top:14px;padding-top:13px;border-top:1px solid var(--line);
+    font-family:var(--mono);font-size:11px;color:var(--dim);justify-content:center}
+  .live{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9.5px;
+    color:var(--dim);text-transform:uppercase;letter-spacing:.12em;margin-bottom:12px}
+  .live i{width:6px;height:6px;border-radius:50%;background:var(--ok);display:block;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 </style>
 </head>
 <body>
-<div class="card">
-  <div class="mark"><span class="eyes"><i></i><i></i></span><b>JYNX</b></div>
-  <div id="view"></div>
+<div class="stack" id="stack">
+  <div class="card" id="main">
+    <div class="mark"><span class="eyes"><i></i><i></i></span><b>JYNX</b></div>
+    <div id="view"></div>
+  </div>
 </div>
 <script>
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
-  var view = $("view");
+  var view = $("view"), stack = $("stack");
   var esc = function (t) { var d = document.createElement("div"); d.textContent = t == null ? "" : t; return d.innerHTML; };
 
-  function fail(t) { view.innerHTML = '<h1>' + esc(t) + '</h1><p class="why">Ask whoever sent it for a fresh link.</p>'; }
+  /* Nothing here may fail silently. A button that does nothing cannot be
+     reported by the person it failed for. */
+  function shout(what) {
+    var b = $("boom") || (function () {
+      var d = document.createElement("div");
+      d.id = "boom"; d.className = "msg bad"; stack.appendChild(d); return d;
+    })();
+    b.textContent = "Page error: " + what + " — send this line to Rio.";
+  }
+  window.onerror = function (m, s, l) { shout(m + " (line " + l + ")"); };
 
-  /* ---- the invitation, out of the fragment ---- */
+  function fail(t, why) {
+    view.innerHTML = '<h1>' + esc(t) + '</h1><p class="why">' + esc(why || "Ask whoever sent it for a fresh link.") + '</p>';
+  }
+
+  /* ---- the invitation ---- */
   var hash = location.hash.slice(1);
   if (!hash) return fail("This link is incomplete.");
   var inv;
@@ -97,121 +163,212 @@
     var pad = hash.replace(/-/g, "+").replace(/_/g, "/");
     pad = pad + "===".slice((pad.length + 3) % 4);
     inv = JSON.parse(decodeURIComponent(escape(atob(pad))));
-  } catch (e) { return fail("This link could not be read."); }
+  } catch (e) { return fail("This link could not be read.", e.message); }
   if (!inv || !inv.t || !inv.d) return fail("This link is incomplete.");
 
   var start = new Date(inv.d);
   if (isNaN(start)) return fail("This invitation has no valid time.");
   var mins = inv.m || 60;
   var end = new Date(start.getTime() + mins * 60000);
+  /* Answers close an hour before, so nobody is still rearranging the meeting
+     while people are leaving for it. */
+  var closes = new Date(start.getTime() - 60 * 60000);
+  var roster = inv.r || [[inv.s, inv.n]];
 
-  /* Rendered in the READER's timezone, always. A time written in the sender's
-     zone is the single most reliable way to make somebody miss a meeting. */
   var fmtDay = new Intl.DateTimeFormat(undefined, { weekday: "long", day: "numeric", month: "long" });
   var fmtTime = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" });
   var zone = "";
   try { zone = new Intl.DateTimeFormat(undefined, { timeZoneName: "short" }).formatToParts(start)
     .filter(function (p) { return p.type === "timeZoneName"; })[0].value; } catch (e) {}
 
-  /* ---- the calendar file ---- */
+  var shut = function () { return Date.now() >= closes.getTime(); };
+
+  /* ---- calendar ---- */
   function ics() {
     var z = function (d) { return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, ""); };
-    var fold = function (s) { return s.replace(/\r?\n/g, "\\n"); };
-    var body = [
+    var f = function (s) { return String(s == null ? "" : s).replace(/\r?\n/g, "\\n"); };
+    return "data:text/calendar;charset=utf-8," + encodeURIComponent([
       "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Jynx//Invitation//EN",
       "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "BEGIN:VEVENT",
       "UID:" + (inv.id || "jynx") + "-" + (inv.s || "x") + "@jynx",
       "DTSTAMP:" + z(new Date()), "DTSTART:" + z(start), "DTEND:" + z(end),
-      "SUMMARY:" + fold(inv.e || "Jynx"),
-      "DESCRIPTION:" + fold(inv.p || ""),
-      "LOCATION:" + fold(inv.w || ""),
+      "SUMMARY:" + f(inv.e), "DESCRIPTION:" + f(inv.p), "LOCATION:" + f(inv.w),
       "BEGIN:VALARM", "TRIGGER:-PT30M", "ACTION:DISPLAY",
-      "DESCRIPTION:" + fold(inv.e || "Jynx") + " in 30 minutes", "END:VALARM",
+      "DESCRIPTION:" + f(inv.e) + " in 30 minutes", "END:VALARM",
       "END:VEVENT", "END:VCALENDAR"
-    ].join("\r\n");
-    return "data:text/calendar;charset=utf-8," + encodeURIComponent(body);
+    ].join("\r\n"));
   }
 
-  /* ---- the channel ---- */
-  var TOPIC = "https://ntfy.sh/" + inv.t;
-  var TAG = "RSVP " + (inv.id || "x") + " " + (inv.s || "?");
+  /* ---- the channel ----
+     Query parameters rather than headers: this stays a CORS simple request,
+     so there is no preflight between the tap and the answer. */
+  var BASE = "https://ntfy.sh/";
+  var TAG = "RSVP " + (inv.id || "x") + " ";
 
-  function post(answer) {
-    var line = TAG + " " + answer;
-    return fetch(TOPIC, {
-      method: "POST",
-      headers: { Title: "RSVP — " + (inv.n || inv.s), Tags: answer === "yes" ? "white_check_mark" : "x", Priority: "2" },
-      body: line + "\n" + (inv.n || inv.s) + (answer === "yes" ? " is coming to " : " cannot make ") + (inv.e || "the call")
+  function publish(topic, title, body, tags) {
+    var q = "?title=" + encodeURIComponent(title) + "&priority=2" +
+            (tags ? "&tags=" + encodeURIComponent(tags) : "");
+    return fetch(BASE + topic + q, {
+      method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: body
+    }).then(function (r) {
+      if (!r.ok) throw new Error("channel returned " + r.status);
+      return r;
     });
   }
 
-  /* Look for an answer this person already gave, so reopening the link shows
-     the state rather than an empty form. */
-  function existing() {
-    var since = Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 7;
-    return fetch(TOPIC + "/json?poll=1&since=" + since).then(function (r) { return r.text(); }).then(function (txt) {
-      var found = null;
-      txt.split("\n").forEach(function (l) {
-        if (!l.trim()) return;
-        var m; try { m = JSON.parse(l); } catch (e) { return; }
-        var b = (m && m.message) || "";
-        if (b.indexOf(TAG + " ") === 0) found = b.slice(TAG.length + 1).split(/\s/)[0];
+  /* Everyone's answers, newest wins. One read serves both "what did I say"
+     and the live roster — they are the same question asked twice. */
+  /* Anything the person answered in this tab is believed immediately. The
+     channel is asked straight afterwards, but a roster that ignores the tap
+     that just happened looks broken for the two seconds it takes to come
+     back — and "it did not register" is exactly the wrong impression. */
+  var optimistic = {};
+
+  function readAll() {
+    return fetch(BASE + inv.t + "/json?poll=1&since=all")
+      .then(function (r) { return r.text(); })
+      .then(function (txt) {
+        var out = {};
+        txt.split(/\r?\n/).forEach(function (l) {
+          if (!l.trim()) return;
+          var m; try { m = JSON.parse(l); } catch (e) { return; }
+          var b = String((m && m.message) || "");
+          if (b.indexOf(TAG) !== 0) return;
+          var bits = b.slice(TAG.length).split(/\s+/);
+          if (bits.length >= 2 && (bits[1] === "yes" || bits[1] === "no")) out[bits[0]] = bits[1];
+        });
+        for (var k in optimistic) out[k] = optimistic[k];
+        return out;
       });
-      return found;
-    }).catch(function () { return null; });
   }
 
-  /* ---- screens ---- */
+  /* ---- the Jynx bubble ---- */
+  function bubble(state, says) {
+    return '<div class="jx ' + state + ' pop"><span class="pair"><i class="e"></i><i class="e"></i></span>' +
+           '<span class="say">' + esc(says) + '</span></div>';
+  }
+
+  /* ---- screen 1: the invitation ---- */
   function ask(note) {
+    var closed = shut();
     view.innerHTML =
-      '<div class="lbl">You are invited</div>' +
+      '<div class="lbl">' + (closed ? "Answers are closed" : "You are invited") + '</div>' +
       '<h1>' + esc(inv.e || "Jynx call") + '</h1>' +
       '<p class="hi">' + esc(inv.n || "") + '</p>' +
       (inv.p ? '<p class="why">' + esc(inv.p) + '</p>' : "") +
       '<div class="when">' +
         '<div class="big">' + esc(fmtDay.format(start)) + ' · ' + esc(fmtTime.format(start)) + '</div>' +
         '<div class="sub">' + esc(fmtTime.format(start)) + '–' + esc(fmtTime.format(end)) + ' ' + esc(zone) +
-        ' · ' + mins + ' min<br>' + esc(inv.w || "") + '</div>' +
+        ' · ' + mins + ' min' + (inv.w ? '<br>' + esc(inv.w) : "") + '</div>' +
       '</div>' +
-      '<div class="row">' +
-        '<button class="go" id="yes">I’ll be there</button>' +
-        '<button class="no" id="no">Can’t make it</button>' +
-      '</div>' +
+      (closed
+        ? '<p class="why">Answers closed an hour before the meeting. If something has changed, text whoever invited you.</p>'
+        : '<div class="row">' +
+            '<button class="go" id="yes">I’ll be there</button>' +
+            '<button class="no" id="no">Can’t make it</button>' +
+          '</div>') +
       '<div class="msg" id="msg">' + (note || "") + '</div>' +
-      '<p class="note">Your answer goes to the team channel. No account, no password.</p>';
-    $("yes").addEventListener("click", function () { act("yes"); });
-    $("no").addEventListener("click", function () { act("no"); });
+      '<p class="note">' + (closed ? "Closed" : "One tap. No account, no password.") +
+        ' · you can change your answer until ' + esc(fmtTime.format(closes)) + '</p>';
+    if (!closed) {
+      $("yes").addEventListener("click", function () { act("yes"); });
+      $("no").addEventListener("click", function () { act("no"); });
+    }
   }
 
-  function done(answer) {
+  /* ---- screen 2: your answer ---- */
+  function mine(answer) {
     var yes = answer === "yes";
+    var closed = shut();
     view.innerHTML =
-      '<div class="done">' +
+      bubble(yes ? "happy" : "down", yes ? "see you there" : "noted") +
+      '<div style="text-align:center">' +
         '<span class="pill ' + (yes ? "ok" : "bad") + '"><i></i>' + (yes ? "You are coming" : "You cannot make it") + '</span>' +
-        '<h2>' + esc(inv.e || "Jynx call") + '</h2>' +
-        '<p>' + esc(fmtDay.format(start)) + ' · ' + esc(fmtTime.format(start)) + ' ' + esc(zone) +
-          '<br>' + (yes ? "The team has been told." : "The team has been told. Nothing else to do.") + '</p>' +
+        '<h1 style="margin-top:12px">' + esc(inv.e || "Jynx call") + '</h1>' +
+        '<p class="why" style="margin-bottom:18px">' + esc(fmtDay.format(start)) + ' · ' +
+          esc(fmtTime.format(start)) + ' ' + esc(zone) + '</p>' +
       '</div>' +
       (yes ? '<a class="cal" href="' + ics() + '" download="jynx-invite.ics">Add to calendar</a>' : "") +
-      '<a class="again" id="again">Change my answer</a>';
-    $("again").addEventListener("click", function () { ask(""); });
+      '<div class="row" style="margin-top:10px">' +
+        (closed ? '' : '<button class="ghost" id="again">Change my decision</button>') +
+      '</div>' +
+      '<div class="msg" id="msg"></div>' +
+      '<p class="note">' + (closed ? "Answers are closed." : "Changeable until " + esc(fmtTime.format(closes))) + '</p>';
+    if (!closed) $("again").addEventListener("click", function () { ask(""); });
   }
 
+  /* ---- the second card: everybody ---- */
+  function renderWho(answers) {
+    var card = $("whocard");
+    if (!card) {
+      card = document.createElement("div");
+      card.id = "whocard"; card.className = "card slide";
+      stack.appendChild(card);
+    }
+    var yes = 0, no = 0, quiet = 0;
+    var rows = roster.map(function (p) {
+      var s = p[0], name = p[1], a = answers[s];
+      if (a === "yes") yes++; else if (a === "no") no++; else quiet++;
+      return '<div class="p' + (s === inv.s ? ' me' : '') + '">' +
+        '<span class="dot ' + (a === "yes" ? "y" : a === "no" ? "n" : "") + '"></span>' +
+        '<span class="nm">' + esc(name) + (s === inv.s ? ' (you)' : '') + '</span>' +
+        '<span class="st">' + (a === "yes" ? "coming" : a === "no" ? "can’t" : "pending") + '</span></div>';
+    }).join("");
+    card.innerHTML =
+      '<div class="live"><i></i>Live · who is coming</div>' +
+      '<div class="who">' + rows + '</div>' +
+      '<div class="tot"><span>' + yes + ' coming</span><span>' + no + ' can’t</span><span>' + quiet + ' pending</span></div>';
+  }
+
+  /* ---- acting ---- */
   function act(answer) {
     $("yes").disabled = true; $("no").disabled = true;
     $("msg").className = "msg"; $("msg").textContent = "Sending…";
-    post(answer).then(function (r) {
-      if (!r.ok) throw new Error("channel returned " + r.status);
-      done(answer);
-    }).catch(function (e) {
-      $("yes").disabled = false; $("no").disabled = false;
-      $("msg").className = "msg bad";
-      $("msg").textContent = "Could not send — " + e.message + ". Try again, or text whoever invited you.";
-    });
+
+    publish(inv.t, "RSVP — " + (inv.n || inv.s),
+            TAG + (inv.s || "?") + " " + answer + "\n" +
+            (inv.n || inv.s) + (answer === "yes" ? " is coming to " : " cannot make ") + (inv.e || "the call"),
+            answer === "yes" ? "white_check_mark" : "x")
+      .then(function () {
+        optimistic[inv.s] = answer;
+        mine(answer);
+        refresh();
+        /* Their own confirmation, on their own channel, so the answer exists
+           somewhere they will still see tomorrow. Best effort: a confirmation
+           that failed must not make a recorded answer look unrecorded. */
+        if (inv.mt) {
+          publish(inv.mt, "Answer recorded — " + (inv.e || "Jynx call"),
+                  (answer === "yes"
+                    ? "You are down as coming to " + (inv.e || "the call") + "."
+                    : "You are down as not able to make " + (inv.e || "the call") + ".") +
+                  "\n" + fmtDay.format(start) + " at " + fmtTime.format(start) +
+                  "\nYou can change it until " + fmtTime.format(closes) + ".",
+                  answer === "yes" ? "white_check_mark" : "x")
+            .catch(function () {});
+        }
+      })
+      .catch(function (e) {
+        $("yes").disabled = false; $("no").disabled = false;
+        $("msg").className = "msg bad";
+        $("msg").textContent = "Could not send — " + e.message + ". Try again, or text whoever invited you.";
+      });
+  }
+
+  /* ---- live ---- */
+  function refresh() {
+    return readAll().then(function (answers) {
+      renderWho(answers);
+      return answers;
+    }).catch(function (e) { shout("could not read the channel — " + e.message); return {}; });
   }
 
   ask("");
-  existing().then(function (a) { if (a === "yes" || a === "no") done(a); });
+  refresh().then(function (answers) {
+    var a = answers[inv.s];
+    if (a === "yes" || a === "no") mine(a);
+    else if (shut()) ask("");
+  });
+  setInterval(refresh, 10000);
 })();
 </script>
 </body>
