@@ -25,9 +25,23 @@
   shown nothing. Anything thrown here is caught and printed where they can
   read it back to you.
 
-  NO PIN, DELIBERATELY. An approval decides something irreversible and is
-  worth a proof; an RSVP is not. Anyone holding a person's link can answer as
-  them, and the page says so rather than implying otherwise.
+  IDENTITY COMES FROM THE LINK, NOT FROM THE CHANNEL, AND THAT BIT US.
+  Rio opened Rio's invitation while signed in to ntfy as Ziv, and the page
+  greeted him as Rio — correct by its own logic and wrong by every other
+  measure. The page cannot see which topic delivered the notification, and
+  anybody subscribed to more than one topic will open somebody else's link
+  eventually. That is not an attack, it is a Tuesday, and it quietly writes
+  one person's answer into another person's row.
+
+  So the person being answered for is stated plainly and can be corrected.
+  The roster already travels in the link, so "Not you?" offers the real list
+  rather than a text box nobody could match back to a row. That closes the
+  accidental case, which is the one that actually happens.
+
+  It does NOT stop somebody deliberately answering as a colleague, and
+  nothing without a secret can. That is the honest boundary of a page with no
+  password, it is written on the page, and it is why anything irreversible
+  goes through `npm run approve`, which demands a PIN.
 -->
 <style>
   :root{
@@ -80,6 +94,17 @@
   .pill i{width:6px;height:6px;border-radius:50%;background:currentColor;display:block}
   a.cal{display:block;text-align:center;padding:14px;border-radius:11px;border:1px solid var(--jynx);
     color:var(--jynx);text-decoration:none;font-weight:700;font-size:14.5px}
+  .idbox{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0 0 14px}
+  .idwho{font-size:13.5px;color:var(--dim)}
+  .idwho b{color:var(--jynx);font-size:14.5px}
+  .fixed{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ok);border:1px solid var(--ok);border-radius:99px;padding:2px 7px;margin-left:4px}
+  .notme{flex:none;min-height:0;padding:6px 11px;border-radius:8px;font-size:12px;font-weight:700;
+    background:transparent;border:1px solid var(--line);color:var(--jynx)}
+  .pick{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+  .pickone{flex:0 1 auto;min-height:0;padding:10px 14px;border-radius:9px;font-size:14px;
+    background:var(--panel);border:1px solid var(--line);color:var(--ink)}
   .note{margin-top:16px;font-family:var(--mono);font-size:10px;line-height:1.6;color:var(--dim);text-align:center}
 
   /* ---- the Jynx bubble, same vocabulary as the product widget ----
@@ -183,6 +208,12 @@
 
   var shut = function () { return Date.now() >= closes.getTime(); };
 
+  /* Who this page is answering for. Starts as whoever the link names, and can
+     be corrected by the reader. `claimed` records that a correction happened,
+     because it changes what we may safely do afterwards. */
+  var meId = inv.s, meName = inv.n, claimed = false;
+  var picking = false;
+
   /* ---- calendar ---- */
   function ics() {
     var z = function (d) { return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, ""); };
@@ -228,14 +259,26 @@
     return fetch(BASE + inv.t + "/json?poll=1&since=all")
       .then(function (r) { return r.text(); })
       .then(function (txt) {
-        var out = {};
-        txt.split(/\r?\n/).forEach(function (l) {
+        /* A channel cannot forget. ntfy has no delete, and the links are
+           already out so the topic cannot be rotated either — so a reset is a
+           MARKER rather than an erasure: the latest `reset <epoch>` on the
+           channel makes everything older than it invisible to every reader.
+           Two passes, because the marker can arrive after the answers it
+           cancels. */
+        var lines = txt.split(/\r?\n/), msgs = [], resetAt = 0;
+        lines.forEach(function (l) {
           if (!l.trim()) return;
           var m; try { m = JSON.parse(l); } catch (e) { return; }
           var b = String((m && m.message) || "");
           if (b.indexOf(TAG) !== 0) return;
           var bits = b.slice(TAG.length).split(/\s+/);
-          if (bits.length >= 2 && (bits[1] === "yes" || bits[1] === "no")) out[bits[0]] = bits[1];
+          if (bits[0] === "reset") { resetAt = Math.max(resetAt, parseInt(bits[1], 10) || 0); return; }
+          msgs.push({ who: bits[0], answer: bits[1], at: m.time || 0 });
+        });
+        var out = {};
+        msgs.forEach(function (m) {
+          if (m.at < resetAt) return;
+          if (m.answer === "yes" || m.answer === "no") out[m.who] = m.answer;
         });
         for (var k in optimistic) out[k] = optimistic[k];
         return out;
@@ -248,13 +291,45 @@
            '<span class="say">' + esc(says) + '</span></div>';
   }
 
+  /* ---- who are we answering for ----
+     Loud, because the failure it prevents is somebody reading past it. */
+  function identityBlock() {
+    if (picking) {
+      return '<div class="idbox"><div class="lbl">Who are you?</div><div class="pick">' +
+        roster.map(function (p) {
+          return '<button class="pickone" data-s="' + esc(p[0]) + '" data-n="' + esc(p[1]) + '">' +
+                 esc(p[1]) + '</button>';
+        }).join("") + '</div></div>';
+    }
+    return '<div class="idbox"><span class="idwho">Answering as <b>' + esc(meName || meId) + '</b>' +
+      (claimed ? ' <span class="fixed">corrected</span>' : '') + '</span>' +
+      '<button class="notme" id="notme">Not you?</button></div>';
+  }
+
+  function wireIdentity() {
+    var nm = document.getElementById("notme");
+    if (nm) nm.addEventListener("click", function () { picking = true; ask(""); });
+    var opts = document.querySelectorAll(".pickone");
+    for (var i = 0; i < opts.length; i++) {
+      opts[i].addEventListener("click", function (e) {
+        var b = e.currentTarget;
+        if (b.getAttribute("data-s") !== inv.s) claimed = true;
+        meId = b.getAttribute("data-s");
+        meName = b.getAttribute("data-n");
+        picking = false;
+        ask("");
+        refresh();
+      });
+    }
+  }
+
   /* ---- screen 1: the invitation ---- */
   function ask(note) {
     var closed = shut();
     view.innerHTML =
       '<div class="lbl">' + (closed ? "Answers are closed" : "You are invited") + '</div>' +
       '<h1>' + esc(inv.e || "Jynx call") + '</h1>' +
-      '<p class="hi">' + esc(inv.n || "") + '</p>' +
+      identityBlock() +
       (inv.p ? '<p class="why">' + esc(inv.p) + '</p>' : "") +
       '<div class="when">' +
         '<div class="big">' + esc(fmtDay.format(start)) + ' · ' + esc(fmtTime.format(start)) + '</div>' +
@@ -263,6 +338,8 @@
       '</div>' +
       (closed
         ? '<p class="why">Answers closed an hour before the meeting. If something has changed, text whoever invited you.</p>'
+        : picking
+        ? ''
         : '<div class="row">' +
             '<button class="go" id="yes">I’ll be there</button>' +
             '<button class="no" id="no">Can’t make it</button>' +
@@ -270,10 +347,11 @@
       '<div class="msg" id="msg">' + (note || "") + '</div>' +
       '<p class="note">' + (closed ? "Closed" : "One tap. No account, no password.") +
         ' · you can change your answer until ' + esc(fmtTime.format(closes)) + '</p>';
-    if (!closed) {
+    if (!closed && !picking) {
       $("yes").addEventListener("click", function () { act("yes"); });
       $("no").addEventListener("click", function () { act("no"); });
     }
+    wireIdentity();
   }
 
   /* ---- screen 2: your answer ---- */
@@ -283,7 +361,8 @@
     view.innerHTML =
       bubble(yes ? "happy" : "down", yes ? "see you there" : "noted") +
       '<div style="text-align:center">' +
-        '<span class="pill ' + (yes ? "ok" : "bad") + '"><i></i>' + (yes ? "You are coming" : "You cannot make it") + '</span>' +
+        '<span class="pill ' + (yes ? "ok" : "bad") + '"><i></i>' +
+          esc(meName || meId) + (yes ? " is coming" : " cannot make it") + '</span>' +
         '<h1 style="margin-top:12px">' + esc(inv.e || "Jynx call") + '</h1>' +
         '<p class="why" style="margin-bottom:18px">' + esc(fmtDay.format(start)) + ' · ' +
           esc(fmtTime.format(start)) + ' ' + esc(zone) + '</p>' +
@@ -309,9 +388,9 @@
     var rows = roster.map(function (p) {
       var s = p[0], name = p[1], a = answers[s];
       if (a === "yes") yes++; else if (a === "no") no++; else quiet++;
-      return '<div class="p' + (s === inv.s ? ' me' : '') + '">' +
+      return '<div class="p' + (s === meId ? ' me' : '') + '">' +
         '<span class="dot ' + (a === "yes" ? "y" : a === "no" ? "n" : "") + '"></span>' +
-        '<span class="nm">' + esc(name) + (s === inv.s ? ' (you)' : '') + '</span>' +
+        '<span class="nm">' + esc(name) + (s === meId ? ' (you)' : '') + '</span>' +
         '<span class="st">' + (a === "yes" ? "coming" : a === "no" ? "can’t" : "pending") + '</span></div>';
     }).join("");
     card.innerHTML =
@@ -325,18 +404,22 @@
     $("yes").disabled = true; $("no").disabled = true;
     $("msg").className = "msg"; $("msg").textContent = "Sending…";
 
-    publish(inv.t, "RSVP — " + (inv.n || inv.s),
-            TAG + (inv.s || "?") + " " + answer + "\n" +
-            (inv.n || inv.s) + (answer === "yes" ? " is coming to " : " cannot make ") + (inv.e || "the call"),
+    publish(inv.t, "RSVP — " + (meName || meId),
+            TAG + (meId || "?") + " " + answer + "\n" +
+            (meName || meId) + (answer === "yes" ? " is coming to " : " cannot make ") + (inv.e || "the call"),
             answer === "yes" ? "white_check_mark" : "x")
       .then(function () {
-        optimistic[inv.s] = answer;
+        optimistic[meId] = answer;
         mine(answer);
         refresh();
         /* Their own confirmation, on their own channel, so the answer exists
            somewhere they will still see tomorrow. Best effort: a confirmation
            that failed must not make a recorded answer look unrecorded. */
-        if (inv.mt) {
+        /* The link carries exactly one topic — its own owner's. If the reader
+           corrected us to somebody else, we have no channel that belongs to
+           them, and sending the confirmation anyway would put "you are down as
+           coming" on the wrong person's phone. Silence beats a lie. */
+        if (inv.mt && !claimed) {
           publish(inv.mt, "Answer recorded — " + (inv.e || "Jynx call"),
                   (answer === "yes"
                     ? "You are down as coming to " + (inv.e || "the call") + "."
@@ -364,7 +447,7 @@
 
   ask("");
   refresh().then(function (answers) {
-    var a = answers[inv.s];
+    var a = answers[meId];
     if (a === "yes" || a === "no") mine(a);
     else if (shut()) ask("");
   });
