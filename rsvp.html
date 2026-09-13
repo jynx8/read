@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Jynx — invitation</title>
+<!--
+  The invitation page. One page, one person, one answer.
+
+  Same shape as approve.html and for the same reason: everything it needs
+  arrives in the URL FRAGMENT, which a browser never sends to a server. The
+  host serves this file knowing nothing about who was invited or to what.
+
+  NO PIN, DELIBERATELY. An approval decides something irreversible and is worth
+  a proof; an RSVP is not. Anyone holding a person's link can answer as that
+  person, and that is an acceptable trade for a page that opens with one tap and
+  asks for nothing. It is stated on the page rather than hidden.
+
+  An answer may be changed. People's evenings change, and a form that refuses to
+  let somebody correct themselves just produces a wrong tally plus a text
+  message.
+-->
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg:#F4F5F7; --panel:#fff; --ink:#0B0D12; --dim:#5B6272; --line:#E1E4EA;
+    --jynx:#7C5CFC; --lilac:#9B82FF; --ok:#16A34A; --bad:#DC2626;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --body:"Assistant",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#05070A; --panel:#12151C; --ink:#F2F4F8; --dim:#98A0B0; --line:#242A36;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);
+    min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;
+    width:100%;max-width:420px;padding:26px 22px;box-shadow:0 18px 50px rgba(0,0,0,.10)}
+  .mark{display:flex;align-items:center;gap:9px;margin-bottom:22px}
+  .eyes{display:flex;gap:5px}
+  .eyes i{width:7px;height:7px;border-radius:50%;background:var(--jynx)}
+  .mark b{font-family:var(--mono);font-size:12px;letter-spacing:.22em;color:var(--dim);font-weight:500}
+  .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:7px}
+  h1{font-size:22px;line-height:1.3;margin:0 0 6px;letter-spacing:-.01em;font-weight:700}
+  .hi{font-size:15px;color:var(--jynx);font-weight:700;margin:0 0 12px}
+  .why{font-size:14.5px;line-height:1.62;color:var(--dim);margin:0 0 18px}
+  .when{background:var(--bg);border:1px solid var(--line);border-radius:11px;
+    padding:14px 15px;margin:0 0 18px}
+  .when .big{font-size:17px;font-weight:700;letter-spacing:-.01em;margin-bottom:4px}
+  .when .sub{font-family:var(--mono);font-size:11.5px;color:var(--dim);line-height:1.6}
+  .row{display:flex;gap:9px;margin-top:4px}
+  button{flex:1;padding:15px;border-radius:11px;border:1px solid var(--line);cursor:pointer;
+    font-family:var(--body);font-weight:700;font-size:15px;background:transparent;color:var(--dim);
+    min-height:54px;-webkit-appearance:none}
+  button.go{background:var(--jynx);border-color:var(--jynx);color:#fff}
+  button.no{color:var(--ink)}
+  button:disabled{opacity:.45}
+  .msg{margin-top:16px;font-size:14px;line-height:1.5;text-align:center;min-height:20px}
+  .msg.ok{color:var(--ok)} .msg.bad{color:var(--bad)}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;
+    letter-spacing:.1em;text-transform:uppercase;padding:5px 10px;border-radius:99px;border:1px solid var(--line)}
+  .pill.ok{color:var(--ok);border-color:var(--ok)}
+  .pill.bad{color:var(--bad);border-color:var(--bad)}
+  .pill i{width:6px;height:6px;border-radius:50%;background:currentColor;display:block}
+  .done{text-align:center;padding:6px 0 2px}
+  .done h2{font-size:19px;margin:10px 0 8px;letter-spacing:-.01em}
+  .done p{font-size:14px;color:var(--dim);margin:0 0 16px;line-height:1.6}
+  a.cal{display:block;text-align:center;padding:14px;border-radius:11px;border:1px solid var(--jynx);
+    color:var(--jynx);text-decoration:none;font-weight:700;font-size:14.5px;margin-bottom:10px}
+  a.again{display:block;text-align:center;font-family:var(--mono);font-size:11px;color:var(--dim);
+    text-decoration:underline;cursor:pointer;margin-top:4px}
+  .note{margin-top:18px;font-family:var(--mono);font-size:10px;line-height:1.6;color:var(--dim);text-align:center}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="mark"><span class="eyes"><i></i><i></i></span><b>JYNX</b></div>
+  <div id="view"></div>
+</div>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var view = $("view");
+  var esc = function (t) { var d = document.createElement("div"); d.textContent = t == null ? "" : t; return d.innerHTML; };
+
+  function fail(t) { view.innerHTML = '<h1>' + esc(t) + '</h1><p class="why">Ask whoever sent it for a fresh link.</p>'; }
+
+  /* ---- the invitation, out of the fragment ---- */
+  var hash = location.hash.slice(1);
+  if (!hash) return fail("This link is incomplete.");
+  var inv;
+  try {
+    var pad = hash.replace(/-/g, "+").replace(/_/g, "/");
+    pad = pad + "===".slice((pad.length + 3) % 4);
+    inv = JSON.parse(decodeURIComponent(escape(atob(pad))));
+  } catch (e) { return fail("This link could not be read."); }
+  if (!inv || !inv.t || !inv.d) return fail("This link is incomplete.");
+
+  var start = new Date(inv.d);
+  if (isNaN(start)) return fail("This invitation has no valid time.");
+  var mins = inv.m || 60;
+  var end = new Date(start.getTime() + mins * 60000);
+
+  /* Rendered in the READER's timezone, always. A time written in the sender's
+     zone is the single most reliable way to make somebody miss a meeting. */
+  var fmtDay = new Intl.DateTimeFormat(undefined, { weekday: "long", day: "numeric", month: "long" });
+  var fmtTime = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" });
+  var zone = "";
+  try { zone = new Intl.DateTimeFormat(undefined, { timeZoneName: "short" }).formatToParts(start)
+    .filter(function (p) { return p.type === "timeZoneName"; })[0].value; } catch (e) {}
+
+  /* ---- the calendar file ---- */
+  function ics() {
+    var z = function (d) { return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, ""); };
+    var fold = function (s) { return s.replace(/\r?\n/g, "\\n"); };
+    var body = [
+      "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Jynx//Invitation//EN",
+      "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "BEGIN:VEVENT",
+      "UID:" + (inv.id || "jynx") + "-" + (inv.s || "x") + "@jynx",
+      "DTSTAMP:" + z(new Date()), "DTSTART:" + z(start), "DTEND:" + z(end),
+      "SUMMARY:" + fold(inv.e || "Jynx"),
+      "DESCRIPTION:" + fold(inv.p || ""),
+      "LOCATION:" + fold(inv.w || ""),
+      "BEGIN:VALARM", "TRIGGER:-PT30M", "ACTION:DISPLAY",
+      "DESCRIPTION:" + fold(inv.e || "Jynx") + " in 30 minutes", "END:VALARM",
+      "END:VEVENT", "END:VCALENDAR"
+    ].join("\r\n");
+    return "data:text/calendar;charset=utf-8," + encodeURIComponent(body);
+  }
+
+  /* ---- the channel ---- */
+  var TOPIC = "https://ntfy.sh/" + inv.t;
+  var TAG = "RSVP " + (inv.id || "x") + " " + (inv.s || "?");
+
+  function post(answer) {
+    var line = TAG + " " + answer;
+    return fetch(TOPIC, {
+      method: "POST",
+      headers: { Title: "RSVP — " + (inv.n || inv.s), Tags: answer === "yes" ? "white_check_mark" : "x", Priority: "2" },
+      body: line + "\n" + (inv.n || inv.s) + (answer === "yes" ? " is coming to " : " cannot make ") + (inv.e || "the call")
+    });
+  }
+
+  /* Look for an answer this person already gave, so reopening the link shows
+     the state rather than an empty form. */
+  function existing() {
+    var since = Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 7;
+    return fetch(TOPIC + "/json?poll=1&since=" + since).then(function (r) { return r.text(); }).then(function (txt) {
+      var found = null;
+      txt.split("\n").forEach(function (l) {
+        if (!l.trim()) return;
+        var m; try { m = JSON.parse(l); } catch (e) { return; }
+        var b = (m && m.message) || "";
+        if (b.indexOf(TAG + " ") === 0) found = b.slice(TAG.length + 1).split(/\s/)[0];
+      });
+      return found;
+    }).catch(function () { return null; });
+  }
+
+  /* ---- screens ---- */
+  function ask(note) {
+    view.innerHTML =
+      '<div class="lbl">You are invited</div>' +
+      '<h1>' + esc(inv.e || "Jynx call") + '</h1>' +
+      '<p class="hi">' + esc(inv.n || "") + '</p>' +
+      (inv.p ? '<p class="why">' + esc(inv.p) + '</p>' : "") +
+      '<div class="when">' +
+        '<div class="big">' + esc(fmtDay.format(start)) + ' · ' + esc(fmtTime.format(start)) + '</div>' +
+        '<div class="sub">' + esc(fmtTime.format(start)) + '–' + esc(fmtTime.format(end)) + ' ' + esc(zone) +
+        ' · ' + mins + ' min<br>' + esc(inv.w || "") + '</div>' +
+      '</div>' +
+      '<div class="row">' +
+        '<button class="go" id="yes">I’ll be there</button>' +
+        '<button class="no" id="no">Can’t make it</button>' +
+      '</div>' +
+      '<div class="msg" id="msg">' + (note || "") + '</div>' +
+      '<p class="note">Your answer goes to the team channel. No account, no password.</p>';
+    $("yes").addEventListener("click", function () { act("yes"); });
+    $("no").addEventListener("click", function () { act("no"); });
+  }
+
+  function done(answer) {
+    var yes = answer === "yes";
+    view.innerHTML =
+      '<div class="done">' +
+        '<span class="pill ' + (yes ? "ok" : "bad") + '"><i></i>' + (yes ? "You are coming" : "You cannot make it") + '</span>' +
+        '<h2>' + esc(inv.e || "Jynx call") + '</h2>' +
+        '<p>' + esc(fmtDay.format(start)) + ' · ' + esc(fmtTime.format(start)) + ' ' + esc(zone) +
+          '<br>' + (yes ? "The team has been told." : "The team has been told. Nothing else to do.") + '</p>' +
+      '</div>' +
+      (yes ? '<a class="cal" href="' + ics() + '" download="jynx-invite.ics">Add to calendar</a>' : "") +
+      '<a class="again" id="again">Change my answer</a>';
+    $("again").addEventListener("click", function () { ask(""); });
+  }
+
+  function act(answer) {
+    $("yes").disabled = true; $("no").disabled = true;
+    $("msg").className = "msg"; $("msg").textContent = "Sending…";
+    post(answer).then(function (r) {
+      if (!r.ok) throw new Error("channel returned " + r.status);
+      done(answer);
+    }).catch(function (e) {
+      $("yes").disabled = false; $("no").disabled = false;
+      $("msg").className = "msg bad";
+      $("msg").textContent = "Could not send — " + e.message + ". Try again, or text whoever invited you.";
+    });
+  }
+
+  ask("");
+  existing().then(function (a) { if (a === "yes" || a === "no") done(a); });
+})();
+</script>
+</body>
+</html>
