@@ -33,10 +33,11 @@
   eventually. That is not an attack, it is a Tuesday, and it quietly writes
   one person's answer into another person's row.
 
-  So the person being answered for is stated plainly and can be corrected.
-  The roster already travels in the link, so "Not you?" offers the real list
-  rather than a text box nobody could match back to a row. That closes the
-  accidental case, which is the one that actually happens.
+  So the person being answered for is stated plainly at the top: opening a
+  colleague's link says their name back to you before you touch anything.
+  A "Not you?" picker was tried and removed — letting anyone answer as anyone
+  is a hole, not a safety net, and everybody has their own link. Naming is
+  the warning; `npm run invite -- --reset` is the cure if one lands wrong.
 
   It does NOT stop somebody deliberately answering as a colleague, and
   nothing without a secret can. That is the honest boundary of a page with no
@@ -98,13 +99,7 @@
     background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0 0 14px}
   .idwho{font-size:13.5px;color:var(--dim)}
   .idwho b{color:var(--jynx);font-size:14.5px}
-  .fixed{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
-    color:var(--ok);border:1px solid var(--ok);border-radius:99px;padding:2px 7px;margin-left:4px}
-  .notme{flex:none;min-height:0;padding:6px 11px;border-radius:8px;font-size:12px;font-weight:700;
-    background:transparent;border:1px solid var(--line);color:var(--jynx)}
-  .pick{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
-  .pickone{flex:0 1 auto;min-height:0;padding:10px 14px;border-radius:9px;font-size:14px;
-    background:var(--panel);border:1px solid var(--line);color:var(--ink)}
+  .idhint{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
   .note{margin-top:16px;font-family:var(--mono);font-size:10px;line-height:1.6;color:var(--dim);text-align:center}
 
   /* ---- the Jynx bubble, same vocabulary as the product widget ----
@@ -208,11 +203,9 @@
 
   var shut = function () { return Date.now() >= closes.getTime(); };
 
-  /* Who this page is answering for. Starts as whoever the link names, and can
-     be corrected by the reader. `claimed` records that a correction happened,
-     because it changes what we may safely do afterwards. */
-  var meId = inv.s, meName = inv.n, claimed = false;
-  var picking = false;
+  /* Who this page is answering for: whoever the link names, full stop.
+     Each person has their own link, so this is not a guess. */
+  var meId = inv.s, meName = inv.n;
 
   /* ---- calendar ---- */
   function ics() {
@@ -292,35 +285,20 @@
   }
 
   /* ---- who are we answering for ----
-     Loud, because the failure it prevents is somebody reading past it. */
-  function identityBlock() {
-    if (picking) {
-      return '<div class="idbox"><div class="lbl">Who are you?</div><div class="pick">' +
-        roster.map(function (p) {
-          return '<button class="pickone" data-s="' + esc(p[0]) + '" data-n="' + esc(p[1]) + '">' +
-                 esc(p[1]) + '</button>';
-        }).join("") + '</div></div>';
-    }
-    return '<div class="idbox"><span class="idwho">Answering as <b>' + esc(meName || meId) + '</b>' +
-      (claimed ? ' <span class="fixed">corrected</span>' : '') + '</span>' +
-      '<button class="notme" id="notme">Not you?</button></div>';
-  }
+     Stated, not selectable. Every person has their own link, so the name in
+     the link is the answer to "who is this" — and a picker that let anyone
+     answer as anyone was a hole, not a safety net: it made a wrong
+     attribution one tap away rather than preventing one.
 
-  function wireIdentity() {
-    var nm = document.getElementById("notme");
-    if (nm) nm.addEventListener("click", function () { picking = true; ask(""); });
-    var opts = document.querySelectorAll(".pickone");
-    for (var i = 0; i < opts.length; i++) {
-      opts[i].addEventListener("click", function (e) {
-        var b = e.currentTarget;
-        if (b.getAttribute("data-s") !== inv.s) claimed = true;
-        meId = b.getAttribute("data-s");
-        meName = b.getAttribute("data-n");
-        picking = false;
-        ask("");
-        refresh();
-      });
-    }
+     The label stays, because it is the part that actually prevents the
+     mistake. Opening a colleague's link now says their name back to you
+     before you touch anything. That is the warning; switching was never the
+     fix. If somebody does answer on the wrong link, `npm run invite --reset`
+     clears the board without disturbing a single link. */
+  function identityBlock() {
+    return '<div class="idbox"><span class="idwho">Answering as <b>' +
+      esc(meName || meId) + '</b></span>' +
+      '<span class="idhint">your own link</span></div>';
   }
 
   /* ---- screen 1: the invitation ---- */
@@ -338,8 +316,6 @@
       '</div>' +
       (closed
         ? '<p class="why">Answers closed an hour before the meeting. If something has changed, text whoever invited you.</p>'
-        : picking
-        ? ''
         : '<div class="row">' +
             '<button class="go" id="yes">I’ll be there</button>' +
             '<button class="no" id="no">Can’t make it</button>' +
@@ -347,11 +323,10 @@
       '<div class="msg" id="msg">' + (note || "") + '</div>' +
       '<p class="note">' + (closed ? "Closed" : "One tap. No account, no password.") +
         ' · you can change your answer until ' + esc(fmtTime.format(closes)) + '</p>';
-    if (!closed && !picking) {
+    if (!closed) {
       $("yes").addEventListener("click", function () { act("yes"); });
       $("no").addEventListener("click", function () { act("no"); });
     }
-    wireIdentity();
   }
 
   /* ---- screen 2: your answer ---- */
@@ -415,11 +390,10 @@
         /* Their own confirmation, on their own channel, so the answer exists
            somewhere they will still see tomorrow. Best effort: a confirmation
            that failed must not make a recorded answer look unrecorded. */
-        /* The link carries exactly one topic — its own owner's. If the reader
-           corrected us to somebody else, we have no channel that belongs to
-           them, and sending the confirmation anyway would put "you are down as
-           coming" on the wrong person's phone. Silence beats a lie. */
-        if (inv.mt && !claimed) {
+        /* Their own confirmation, on their own channel. Best effort: a
+           confirmation that failed must never make a recorded answer look
+           unrecorded. */
+        if (inv.mt) {
           publish(inv.mt, "Answer recorded — " + (inv.e || "Jynx call"),
                   (answer === "yes"
                     ? "You are down as coming to " + (inv.e || "the call") + "."
